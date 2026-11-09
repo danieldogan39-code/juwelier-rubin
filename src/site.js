@@ -173,6 +173,49 @@ function xe() {
           }),
         ));
     }));
+  // Blatt von unten (Handy): am Kopf greifen und nach unten ziehen. Das Blatt folgt dem Finger, nach oben
+  // gibt es nur zäh nach, und beim Loslassen entscheidet der Schwung, ob es schließt oder zurückfedert.
+  v("dialog.sheet-small").forEach((n) => {
+    let top = c(".sheet-top", n),
+      drag = null;
+    if (!top) return;
+    top.addEventListener("pointerdown", (ev) => {
+      if (drag || !oe("(max-width: 699px)") || ev.target.closest("button, a")) return;
+      let now = performance.now();
+      drag = { y: ev.clientY, dy: 0, v: 0, ly: ev.clientY, lt: now };
+      try {
+        top.setPointerCapture(ev.pointerId);
+      } catch {}
+    });
+    top.addEventListener("pointermove", (ev) => {
+      if (!drag) return;
+      let now = performance.now(),
+        dy = ev.clientY - drag.y;
+      ((drag.v = (ev.clientY - drag.ly) / Math.max(8, now - drag.lt)), (drag.ly = ev.clientY), (drag.lt = now), (drag.dy = dy));
+      n.style.transform = `translateY(${(dy > 0 ? dy : dy / (1 - dy / 50)).toFixed(1)}px)`;
+    });
+    let end = () => {
+      if (!drag) return;
+      let d = drag,
+        h = n.offsetHeight,
+        vel = performance.now() - d.lt > 90 ? 0 : d.v,
+        shut = d.dy > 0 && (vel > 0.45 || (d.dy > h * 0.35 && vel > -0.2)),
+        from = n.style.transform || "none";
+      drag = null;
+      if ($ || typeof n.animate != "function") {
+        ((n.style.transform = ""), shut && n.close());
+        return;
+      }
+      if (shut) {
+        let dur = z(Math.max(40, h - d.dy) / Math.max(vel, 0.9), 140, 320);
+        ((n.animate([{ transform: from }, { transform: "translateY(105%)" }], { duration: dur, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }).onfinish = () => {
+          ((n.style.transform = ""), n.close());
+        }),
+          (n.style.transform = "translateY(105%)"));
+      } else (n.animate([{ transform: from }, { transform: "none" }], { duration: 320, easing: "cubic-bezier(0.32, 0.72, 0, 1)" }), (n.style.transform = ""));
+    };
+    (top.addEventListener("pointerup", end), top.addEventListener("pointercancel", end));
+  });
 }
 function $e() {
   let e = c(".action-bar"),
@@ -342,7 +385,7 @@ function Fe() {
   }
   v("[data-reveal]").forEach((t) => {
     let s = [...t.parentElement.children].filter((i) => i.hasAttribute("data-reveal")).indexOf(t);
-    s > 0 && !t.style.getPropertyValue("--d") && t.style.setProperty("--d", `${Math.min(s, 6) * 0.09}s`);
+    s > 0 && !t.style.getPropertyValue("--d") && t.style.setProperty("--d", `${Math.min(s, 6) * 0.07}s`);
   });
   let a = new IntersectionObserver(
     (t) =>
@@ -439,8 +482,8 @@ function Ie() {
       n = c("[data-rail-next]", a),
       s = c(".rail-bar i", a),
       i = () => {
-        let m = e.firstElementChild;
-        return m ? m.getBoundingClientRect().width + 20 : 300;
+        let k = e.children;
+        return k.length > 1 ? k[1].offsetLeft - k[0].offsetLeft : k[0] ? k[0].getBoundingClientRect().width + 20 : 300;
       },
       o = () => {
         let m = e.scrollWidth - e.clientWidth;
@@ -485,15 +528,29 @@ function Ie() {
           e.classList.remove("is-dragging");
           return;
         }
-        let m = -h * 16,
-          w = () => {
-            if (Math.abs(m) < 0.4 || $) {
-              e.classList.remove("is-dragging");
+        // Schwung: Aus der Geschwindigkeit beim Loslassen wird der Ruhepunkt vorausberechnet, dort rastet
+        // die nächste Karte ein. Eine kritisch gedämpfte Feder übernimmt die Geschwindigkeit ohne Ruck.
+        let vel = performance.now() - g < 90 ? -h * 1000 : 0,
+          max = e.scrollWidth - e.clientWidth,
+          step = i(),
+          target = z(Math.round((e.scrollLeft + vel * 0.499) / step) * step, 0, max),
+          st = { x: e.scrollLeft, v: vel },
+          last = performance.now(),
+          w = (now) => {
+            let dt = Math.min(0.05, (now - last) / 1000);
+            last = now;
+            let om = 9,
+              ex = Math.exp(-om * dt),
+              dd = st.x - target,
+              tmp = (st.v + om * dd) * dt;
+            ((st.x = target + (dd + tmp) * ex), (st.v = (st.v - om * tmp) * ex));
+            if ($ || (Math.abs(st.x - target) < 0.5 && Math.abs(st.v) < 8)) {
+              ((e.scrollLeft = target), e.classList.remove("is-dragging"));
               return;
             }
-            ((e.scrollLeft += m), (m *= 0.94), (b = requestAnimationFrame(w)));
+            ((e.scrollLeft = st.x), (b = requestAnimationFrame(w)));
           };
-        w();
+        b = requestAnimationFrame(w);
       }),
       e.addEventListener(
         "click",
