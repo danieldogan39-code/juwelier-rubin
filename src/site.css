@@ -59,7 +59,8 @@
   --fg-2: var(--ink-2);
   --hair: var(--line);
   --em: var(--ruby);
-  --kicker: var(--ruby);
+  --kicker: var(--ink-2); /* Rubinrot bleibt Schaltflächen, dem betonten Wort und feinen Linien vorbehalten */
+  --kicker-line: var(--ruby);
   --focus: var(--ruby);
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
   color-scheme: light;
@@ -101,6 +102,7 @@ html.has-intro {
   --hair: var(--line-dark);
   --em: var(--champagne);
   --kicker: var(--champagne);
+  --kicker-line: currentColor;
   --focus: var(--champagne);
   color: var(--fg);
 }
@@ -328,8 +330,8 @@ textarea {
   content: "";
   width: 2.25rem;
   height: 1px;
-  background: currentColor;
-  opacity: 0.7;
+  background: var(--kicker-line, currentColor);
+  opacity: 0.8;
   flex: none;
   transform-origin: left;
 }
@@ -3160,7 +3162,7 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
 .stars {
   display: flex;
   gap: 3px;
-  color: var(--ruby);
+  color: var(--champagne-2);
 }
 .stars svg {
   width: 18px;
@@ -3264,7 +3266,7 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
   flex: none;
   width: 68px;
   height: 12px;
-  background: var(--ruby);
+  background: var(--champagne-2);
   -webkit-mask: var(--star) 0 0 / 14px 12px repeat-x;
   mask: var(--star) 0 0 / 14px 12px repeat-x;
 }
