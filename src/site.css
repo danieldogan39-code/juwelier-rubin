@@ -8301,6 +8301,7 @@ a.gbadge {
   display: grid;
   width: 100%;
   border: 1px solid var(--line-dark);
+  background-color: rgba(14, 11, 11, 0.78); /* bleibt lesbar, wenn sich das Produkt dahinter dreht */
   color: var(--pearl);
   transition:
     border-color 0.22s var(--ease-out),
@@ -8352,7 +8353,7 @@ a.gbadge {
   }
   .stage-card:hover {
     border-color: color-mix(in srgb, var(--pearl) 46%, transparent);
-    background-color: rgba(244, 238, 231, 0.05);
+    background-color: rgba(34, 27, 28, 0.9);
   }
   .stage-card:hover .arr {
     transform: translate(5px);
@@ -8497,4 +8498,9 @@ a.gbadge {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+}
+@media (min-width: 960px) and (max-width: 1199px) {
+  .hero-stage .stage-fx {
+    inset: 6% 24% 14% -6%;
+  }
 }

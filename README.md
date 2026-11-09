@@ -23,5 +23,5 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
 - Aufliegende Szenen (Ringpaar, Ringreihe, Ohrstecker, loser Stein) werden aus Berührung und Schwerpunkt berechnet,
   nichts durchdringt sich.
 - Die Standbilder `assets/img/r-*.avif/.webp` sind Aufnahmen aus demselben Modul. Wer am Modul etwas ändert,
-  sollte sie neu aufnehmen (Ansichten: siehe Commit-Verlauf zu den Standbildern).
+  sollte sie neu aufnehmen. Zustand und Ansicht jedes Bildes stehen in `src/ring/standbilder.json`.
 - Das Logo-Intro der Startseite ist `assets/brand/rubin-intro.svg` (zeichnet das Logo aus seinen Bauteilen).

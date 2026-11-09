@@ -1,0 +1,105 @@
+[
+ {
+  "bild": "r-pair",
+  "zustand": {
+   "mode": "pair",
+   "metal": "gelbgold"
+  },
+  "ansicht_drehung_neigung_zoom": "0.6,0.3,1",
+  "leinwand": [
+   750,
+   750
+  ]
+ },
+ {
+  "bild": "r-solo",
+  "zustand": {
+   "mode": "single",
+   "stones": "eins",
+   "engraving": "Anna & Ben 12.06.2027",
+   "width": 4.6,
+   "thickness": 1.9
+  },
+  "ansicht_drehung_neigung_zoom": "0.35,0.18,1",
+  "leinwand": [
+   700,
+   700
+  ]
+ },
+ {
+  "bild": "r-engraving",
+  "zustand": {
+   "mode": "single",
+   "stones": "ohne",
+   "engraving": "Anna & Ben 12.06.2027",
+   "width": 4.6,
+   "thickness": 1.9
+  },
+  "ansicht_drehung_neigung_zoom": "0,0.62,1.1",
+  "leinwand": [
+   1000,
+   800
+  ]
+ },
+ {
+  "bild": "r-memoire",
+  "zustand": {
+   "mode": "single",
+   "stones": "memoire",
+   "metal": "rosegold",
+   "width": 3.6,
+   "thickness": 1.7
+  },
+  "ansicht_drehung_neigung_zoom": "0.3,0.5,1.1",
+  "leinwand": [
+   1000,
+   800
+  ]
+ },
+ {
+  "bild": "r-lineup",
+  "zustand": {
+   "mode": "lineup"
+  },
+  "ansicht_drehung_neigung_zoom": "0.4,0.42,1",
+  "leinwand": [
+   1400,
+   760
+  ]
+ },
+ {
+  "bild": "r-solitaire",
+  "zustand": {
+   "mode": "solitaire",
+   "tilt": 0.26
+  },
+  "ansicht_drehung_neigung_zoom": "0.5,0.1,1",
+  "leinwand": [
+   800,
+   1100
+  ]
+ },
+ {
+  "bild": "r-studs",
+  "zustand": {
+   "mode": "studs",
+   "metal": "weissgold"
+  },
+  "ansicht_drehung_neigung_zoom": "0.25,0.5,1",
+  "leinwand": [
+   1000,
+   820
+  ]
+ },
+ {
+  "bild": "r-brilliant",
+  "zustand": {
+   "mode": "stone"
+  },
+  "ansicht_drehung_neigung_zoom": "0.5,0.42,1",
+  "leinwand": [
+   1000,
+   900
+  ]
+ }
+]
