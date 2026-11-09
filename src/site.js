@@ -1429,17 +1429,16 @@ function nt() {
   let o = async () => {
     try {
       let { createRingViewer: r } = await de(),
-        d = oe("(max-width: 760px)"),
         l = r(a, {
           mode: "pair",
           autoRotate: !0,
           interactive: !0,
           preserve: !0,
           fontFamily: '"Fraunces"',
-          pixelRatio: ue(d ? 1.75 : 1.6),
+          restPitch: 0.3,
           state: { mode: "pair", metal: s || "gelbgold" },
           onReady: () => {
-            ($ || (l.setView(-0.35, 0.42, 0.84), l.frame({ yaw: 0.55, pitch: 0, zoom: 1, auto: !0 })), fe(e));
+            ($ ? l.setView(0.6, 0.3, 1) : (l.setView(-0.15, 0.52, 0.86), l.frame({ yaw: 0.6, pitch: 0.3, zoom: 1, auto: !0 })), fe(e));
           },
         });
       (window.addEventListener("pageswap", () => l.renderNow()),
@@ -1553,7 +1552,6 @@ function at() {
               preserve: !0,
               warm: !0,
               fontFamily: '"Fraunces"',
-              pixelRatio: ue(1.6),
               restPitch: 0.24,
               state: D,
               onReady: () => fe(i),
@@ -1695,7 +1693,6 @@ function lt() {
           preserve: !0,
           warm: !0,
           fontFamily: '"Fraunces"',
-          pixelRatio: ue(1.75),
           state: Object.assign({ mode: "single" }, f(i())),
           onReady: () => {
             ($ || (l.setView(-0.5, 0.5, 0.86), l.frame({ yaw: 0.35, pitch: 0.18, zoom: 1 })), fe(h));

@@ -53,6 +53,7 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-io: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --intro: 0s;
   --fg: var(--ink);
   --fg-2: var(--ink-2);
@@ -344,8 +345,8 @@ p + p {
   text-underline-offset: 0.22em;
   text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
   transition:
-    color 0.3s,
-    text-decoration-color 0.3s;
+    color 0.2s,
+    text-decoration-color 0.2s;
 }
 @media (orientation: landscape) and (max-height: 560px) {
   .h2 {
@@ -423,10 +424,10 @@ p + p {
   overflow: hidden;
   isolation: isolate;
   transition:
-    background-color 0.4s var(--ease),
-    border-color 0.4s var(--ease),
-    color 0.4s var(--ease),
-    scale 0.16s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out),
+    color 0.22s var(--ease-out),
+    scale 0.14s var(--ease-out),
     translate 0.5s var(--ease);
 }
 .btn svg {
@@ -451,16 +452,7 @@ p + p {
   z-index: -1;
   background: var(--btn-fill, transparent);
   transform: translateY(101%);
-  transition: transform 0.55s var(--ease);
-}
-.btn:after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
-  transform: translate(-120%);
-  transition: transform 0.9s var(--ease);
+  transition: transform 0.3s var(--ease-out);
 }
 .btn:active {
   scale: 0.97;
@@ -502,12 +494,12 @@ p + p {
   text-transform: uppercase;
   color: var(--fg);
   background: linear-gradient(currentColor, currentColor) 0 calc(50% + 0.95em) / 100% 1px no-repeat;
-  transition: background-size 0.5s var(--ease);
+  transition: background-size 0.32s var(--ease-out);
 }
 .arr {
   display: inline-grid;
   place-items: center;
-  transition: transform 0.5s var(--ease);
+  transition: transform 0.3s var(--ease-out);
 }
 .arr svg {
   width: 16px;
@@ -516,9 +508,6 @@ p + p {
 @media (hover: hover) and (pointer: fine) {
   .btn:hover:before {
     transform: none;
-  }
-  .btn:hover:after {
-    transform: translate(120%);
   }
   .btn-ghost:hover {
     border-color: currentColor;
@@ -552,10 +541,10 @@ p + p {
   --hfg: var(--ink);
   color: var(--hfg);
   transition:
-    background-color 0.5s var(--ease),
-    box-shadow 0.5s var(--ease),
-    transform 0.6s var(--ease),
-    color 0.5s var(--ease);
+    background-color 0.35s var(--ease-out),
+    box-shadow 0.35s var(--ease-out),
+    transform 0.5s var(--ease),
+    color 0.35s var(--ease-out);
   view-transition-name: site-header;
 }
 html[data-tone="dark"] .site-header:not(.is-solid) {
@@ -570,6 +559,7 @@ html[data-tone="dark"] .site-header:not(.is-solid) {
 }
 .site-header.is-hidden {
   transform: translateY(-110%);
+  transition-duration: 0.35s, 0.35s, 0.3s, 0.35s;
 }
 .header-inner {
   display: flex;
@@ -650,7 +640,7 @@ html[data-tone="dark"] .site-header:not(.is-solid) .logo-ink {
 .nav-link svg {
   width: 14px;
   height: 14px;
-  transition: transform 0.4s var(--ease);
+  transition: transform 0.25s var(--ease-out);
 }
 summary.nav-link::-webkit-details-marker {
   display: none;
@@ -665,7 +655,7 @@ summary.nav-link::-webkit-details-marker {
   background: currentColor;
   transform: scaleX(0);
   transform-origin: right;
-  transition: transform 0.6s var(--ease);
+  transition: transform 0.3s var(--ease-out);
 }
 .nav-link[aria-current="page"]:after,
 .nav-drop.is-active > .nav-link:after {
@@ -689,7 +679,7 @@ summary.nav-link::-webkit-details-marker {
   border: 1px solid var(--line);
   box-shadow: 0 40px 80px -30px #0e0b0b73;
   transform-origin: 1.5rem 0;
-  animation: drop-in 0.4s var(--ease-out);
+  animation: drop-in 0.2s var(--ease-out);
 }
 @keyframes drop-in {
   0% {
@@ -699,14 +689,14 @@ summary.nav-link::-webkit-details-marker {
 }
 .drop li {
   opacity: 0;
-  animation: fade-up 0.45s var(--ease) forwards;
-  animation-delay: calc(var(--i, 0) * 35ms + 60ms);
+  animation: fade-up 0.3s var(--ease-out) forwards;
+  animation-delay: calc(var(--i, 0) * 30ms + 20ms);
 }
 .drop a {
   display: grid;
   gap: 0.2rem;
   padding: 0.85rem 1rem;
-  transition: background-color 0.3s;
+  transition: background-color 0.15s;
 }
 .drop a[aria-current="page"] {
   background: var(--ivory);
@@ -735,10 +725,10 @@ summary.nav-link::-webkit-details-marker {
   text-transform: uppercase;
   white-space: nowrap;
   transition:
-    background-color 0.4s var(--ease),
-    color 0.4s var(--ease),
-    border-color 0.4s,
-    scale 0.16s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    color 0.22s var(--ease-out),
+    border-color 0.22s,
+    scale 0.14s var(--ease-out),
     translate 0.5s var(--ease);
 }
 .header-cta:active {
@@ -846,10 +836,10 @@ dialog.sheet::backdrop {
   backdrop-filter: blur(4px);
 }
 dialog.sheet[open] {
-  animation: sheet-in 0.5s var(--ease);
+  animation: sheet-in 0.32s var(--ease-out);
 }
 dialog.sheet.is-closing {
-  animation: sheet-out 0.28s var(--ease-io) forwards;
+  animation: sheet-out 0.2s var(--ease-out) forwards;
 }
 @keyframes sheet-in {
   0% {
@@ -904,10 +894,10 @@ dialog.sheet.is-closing {
   overscroll-behavior: contain;
 }
 dialog.sheet-menu[open] {
-  animation: menu-in 0.7s var(--ease) both;
+  animation: menu-in 0.55s var(--ease-drawer) both;
 }
 dialog.sheet-menu.is-closing {
-  animation: menu-out 0.42s var(--ease-io) forwards;
+  animation: menu-out 0.3s var(--ease-out) forwards;
 }
 @keyframes menu-in {
   0% {
@@ -950,13 +940,13 @@ dialog.sheet-menu.is-closing {
     translate 0.5s var(--ease);
 }
 .sheet-menu[open] .menu-group a {
-  animation: rise 0.8s var(--ease) both;
-  animation-delay: calc(0.12s + var(--i, 0) * 38ms);
+  animation: rise 0.55s var(--ease-out) both;
+  animation-delay: calc(0.08s + var(--i, 0) * 32ms);
 }
 .sheet-menu[open] .menu-group h2,
 .sheet-menu[open] .menu-foot {
-  animation: fade-up 0.8s var(--ease) both;
-  animation-delay: 0.2s;
+  animation: fade-up 0.5s var(--ease-out) both;
+  animation-delay: 0.14s;
 }
 .menu-foot {
   margin-top: auto;
@@ -1031,7 +1021,7 @@ dialog.sheet-small {
   overscroll-behavior: contain;
 }
 dialog.sheet-small[open] {
-  animation: up-in 0.5s var(--ease) both;
+  animation: up-in 0.42s var(--ease-drawer) both;
 }
 @keyframes up-in {
   0% {
@@ -1121,8 +1111,8 @@ html.has-dialog {
   box-shadow: 0 18px 40px -14px #0000008c;
   color: var(--pearl);
   transition:
-    transform 0.6s var(--ease),
-    opacity 0.4s var(--ease),
+    transform 0.5s var(--ease-drawer),
+    opacity 0.3s var(--ease-out),
     visibility 0s;
   view-transition-name: action-bar;
 }
@@ -1131,9 +1121,9 @@ html.has-dialog {
   opacity: 0;
   visibility: hidden;
   transition:
-    transform 0.6s var(--ease),
-    opacity 0.4s var(--ease),
-    visibility 0s 0.6s;
+    transform 0.32s var(--ease-out),
+    opacity 0.24s var(--ease-out),
+    visibility 0s 0.32s;
 }
 .action-bar a,
 .action-bar button {
@@ -4864,8 +4854,8 @@ a.gbadge {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, #0e0b0beb, #0e0b0bbd, #0e0b0b38 64%, #0e0b0b0a), linear-gradient(0deg, #0e0b0be0, #0e0b0b00 40%),
-    linear-gradient(180deg, #0e0b0b8c, #0e0b0b00 24%);
+    linear-gradient(90deg, #0e0b0bf0, #0e0b0bc7, #0e0b0b38 64%, #0e0b0b0a), linear-gradient(0deg, #0e0b0be0, #0e0b0b00 40%),
+    linear-gradient(180deg, #0e0b0bc2, #0e0b0b00 26%);
 }
 .page-hero.has-bg .lead {
   color: #f4eee7d6;
@@ -4891,10 +4881,12 @@ a.gbadge {
     object-position: var(--fxm, 70%) var(--fy, 50%);
   }
   .hero-bg:after {
-    background: linear-gradient(0deg, #0e0b0bf5, #0e0b0b59 48%, #0e0b0b73);
+    background:
+      linear-gradient(180deg, #0e0b0bd9, #0e0b0b00 26%),
+      linear-gradient(0deg, #0e0b0b 0, #0e0b0bfa 30%, #0e0b0b40 58%, #0e0b0b1a);
   }
   .page-hero.has-bg {
-    padding-top: calc(min(118vw, 40rem) * 0.46);
+    padding-top: calc(min(118vw, 40rem) * 0.67);
   }
 }
 @media (orientation: landscape) and (max-height: 560px) {
@@ -8145,13 +8137,15 @@ a.gbadge {
   @view-transition {
     navigation: none;
   }
+  /* Bewegung entfällt, Farb- und Deckkraftwechsel bleiben als kurze Überblendung */
   *,
   *:before,
   *:after {
     animation-duration: 0.01ms !important;
     animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, text-decoration-color, visibility !important;
+    transition-duration: 0.15s !important;
     transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
@@ -8222,4 +8216,283 @@ a.gbadge {
   .intro {
     display: none !important;
   }
+}
+
+/* ===== Produkt-Bühne im Hero: Metallwahl als beschriftete Leiste, Produktkarte am Stück ===== */
+.hero-actions {
+  gap: 0.9rem 1.5rem;
+}
+.hero-actions .hero-rating {
+  margin-top: 0;
+}
+.metal-rail {
+  display: flex;
+  gap: 4px;
+}
+.metal {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.85rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mist);
+  font: 600 var(--label)/1 var(--sans);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: color 0.2s var(--ease-out);
+}
+.metal-name small {
+  font-size: inherit;
+  font-weight: 500;
+  opacity: 0.7;
+}
+.metal-dot {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  transition: scale 0.14s var(--ease-out);
+}
+.metal-dot:before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0, var(--c) 42%, color-mix(in srgb, var(--c) 58%, #3a2a1a) 100%);
+  transition: transform 0.3s var(--ease-out);
+}
+.metal-dot:after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--champagne);
+  opacity: 0;
+  transform: scale(0.86);
+  transition:
+    opacity 0.2s var(--ease-out),
+    transform 0.3s var(--ease-out);
+}
+.metal:active .metal-dot {
+  scale: 0.9;
+}
+.metal[aria-pressed="true"] {
+  color: var(--pearl);
+}
+.metal[aria-pressed="true"] .metal-dot:after {
+  opacity: 1;
+  transform: none;
+}
+.metal[aria-pressed="true"] .metal-dot:before {
+  transform: scale(1.1);
+}
+.stage-card {
+  display: grid;
+  width: 100%;
+  border: 1px solid var(--line-dark);
+  color: var(--pearl);
+  transition:
+    border-color 0.22s var(--ease-out),
+    background-color 0.22s var(--ease-out),
+    scale 0.14s var(--ease-out);
+}
+.stage-card:active {
+  scale: 0.985;
+}
+.stage-card-info {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem 1.1rem 0.9rem;
+}
+.stage-card-badge {
+  font: 600 0.6875rem/1 var(--sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--champagne);
+}
+.stage-card-title {
+  font: 340 1.3rem/1.15 var(--serif);
+  letter-spacing: -0.01em;
+}
+.stage-card-sub {
+  font-size: 0.84rem;
+  line-height: 1.2;
+  color: var(--mist);
+}
+.stage-card-sub.is-tick {
+  animation: tick 0.5s var(--ease-out);
+}
+.stage-card-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-top: 1px solid var(--line-dark);
+  font: 600 var(--label)/1.2 var(--sans);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+@media (hover: hover) and (pointer: fine) {
+  .metal:hover {
+    color: var(--pearl);
+  }
+  .stage-card:hover {
+    border-color: color-mix(in srgb, var(--pearl) 46%, transparent);
+    background-color: rgba(244, 238, 231, 0.05);
+  }
+  .stage-card:hover .arr {
+    transform: translate(5px);
+  }
+}
+@media (max-width: 959px) {
+  .hero-controls {
+    display: grid;
+    gap: 0.9rem;
+  }
+  .metal-name {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .metal-rail {
+    margin-left: -11px;
+  }
+}
+@media (min-width: 960px) {
+  /* Produkt mittig auf der Bühne, rechts bleibt Platz für Leiste und Karte */
+  .hero-stage .stage-fx {
+    inset: 3% 14% 5% -14%;
+  }
+  .hero-controls {
+    gap: 1.6rem;
+    align-items: stretch;
+    width: clamp(15rem, 19vw, 18.5rem);
+  }
+  .metal-rail {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+    position: relative;
+  }
+  /* feine Linie hinter den Farbpunkten: die Leiste liest sich als Skala */
+  .metal-rail:before {
+    content: "";
+    position: absolute;
+    right: 21.5px;
+    top: 22px;
+    bottom: 22px;
+    width: 1px;
+    background: var(--line-dark);
+  }
+  .metal-dot:before {
+    width: 14px;
+    height: 14px;
+    box-shadow: 0 0 0 5px var(--velvet);
+  }
+  .metal-dot:after {
+    inset: 11px;
+  }
+  .metal[aria-pressed="true"] .metal-dot:before {
+    transform: scale(1.15);
+  }
+}
+@media (min-width: 960px) and (max-height: 760px) {
+  .metal {
+    min-height: 36px;
+  }
+  .metal-dot {
+    height: 36px;
+  }
+  .metal-rail:before {
+    top: 18px;
+    bottom: 18px;
+  }
+  .stage-card-title {
+    font-size: 1.15rem;
+  }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .stage-card,
+  .metal-name {
+    display: none;
+  }
+  .metal-rail {
+    flex-direction: row;
+  }
+  .metal-rail:before {
+    display: none;
+  }
+}
+
+/* ===== Einstellungen des Geräts ===== */
+@media (prefers-reduced-transparency: reduce) {
+  .site-header.is-solid {
+    background: var(--paper);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .action-bar,
+  .to-top,
+  .preview-pill summary {
+    background: var(--onyx);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  dialog.sheet::backdrop {
+    background: #0e0b0be0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  :root {
+    --ink-2: #3b3232;
+    --ink-3: #554b48;
+    --mist: #d9d0ca;
+    --mist-2: #bcb1aa;
+    --line: rgba(27, 21, 22, 0.42);
+    --line-dark: rgba(244, 238, 231, 0.48);
+  }
+  .site-header.is-solid {
+    background: var(--paper);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 1px 0 var(--ink);
+  }
+  .btn-ghost,
+  .header-cta,
+  .stage-card {
+    border-color: currentColor;
+  }
+  :focus-visible {
+    outline-width: 3px;
+  }
+}
+/* Bedienelemente lassen sich nicht versehentlich markieren, Links als Schaltflächen zeigen kein Kontextmenü beim Halten */
+.btn,
+.header-cta,
+.menu-btn,
+.action-bar a,
+.stage-card,
+.tlink,
+.rail-btn,
+.to-top {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }

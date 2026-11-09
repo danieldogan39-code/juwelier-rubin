@@ -1,0 +1,10 @@
+{
+  "name": "juwelier-rubin",
+  "private": true,
+  "description": "Website-Entwurf Juwelier Rubin – Quellen in src/, Ausgabe über build.py",
+  "type": "module",
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "three": "0.185.0"
+  }
+}
