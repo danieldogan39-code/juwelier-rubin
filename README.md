@@ -26,7 +26,7 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
   Körnern (Memoire). Die Steingröße richtet sich nach Breite und Höhe der Schiene, kein Stein ragt innen durch.
 - Legierungen 333, 585, 750 und Platin 950 mit eigener Farbe und Dichte; `ringSpecs()` rechnet daraus Gewicht,
   Karat und Maße (Anzeige im Ring-Studio).
-- Die Fläche unter dem Ring spiegelt wie schwarzes Glas (Fresnel, n = 1,5) – Startseite, Baukasten und Ring-Studio.
+- Die Fläche unter dem Ring spiegelt wie schwarzes Glas (Fresnel, n = 1,5) – Baukasten und Ring-Studio.
 
 ## Ring-Studio und Baukasten
 
@@ -40,20 +40,17 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
   sollte sie neu aufnehmen. Zustand und Ansicht jedes Bildes stehen in `src/ring/standbilder.json`.
 - Das Logo-Intro der Startseite ist `assets/brand/rubin-intro.svg` (zeichnet das Logo aus seinen Bauteilen).
 
+## Startseite: erster Bildschirm
+
+- Titelblock links, rechts ein Mosaik aus sechs verlinkten Fotokacheln (Trauringe, Verlobungsringe, Schmuck, Uhren,
+  Goldankauf, Werkstatt). Die obere Reihe zeigt, was in der Überschrift steht. Darunter die Öffnungszeiten der Filialen.
+- Handy hochkant: Titel, dann die Kacheln in zwei Spalten. Tablet: drei Spalten. Handy quer: Titel links, Kacheln rechts.
+- Der Bildausschnitt jeder Kachel steht als `--pos` im `style` der Kachel (`index.html`).
+- Im ersten Bildschirm läuft kein 3D und kein Video mehr.
+
 ## Rechenlast
 
-- **Hero:** Die Drehung des Ringpaars ist vorab aufgenommen (`assets/video/ring-<metall>-960.mp4` und `-640.mp4`,
-  20 s je Umdrehung, 30 Bilder/s). Jedes Video enthält oben die Farbe und unten die Deckkraft; ein kleines
-  WebGL-Viereck setzt beides zusammen (`alphaVideo` in `src/site.js`). So bleibt der Hintergrund durchsichtig und
-  jedes Gerät mit H.264-Decoder spielt es ab.
-- Die Echtzeit-Ansicht startet im Hero erst beim Anfassen (Maus über dem Ring, Finger, Pfeiltasten), übernimmt
-  genau das Bild des Videos und gibt nach ein paar Sekunden Ruhe wieder an das Video ab.
 - Baukasten und Ring-Studio zeichnen nur, wenn sich etwas ändert. Der Baukasten startet seine 3D-Ansicht erst beim
   Bedienen oder wenn er kurz im Bild steht.
-- „Weniger Bewegung“ oder Datensparmodus: kein Video, Standbild; 3D beim Anfassen.
-- Geräte ohne Grafikbeschleunigung (WebGL nur per Software): weder Video noch 3D im Hero, stattdessen das Standbild
-  im gewählten Metall (`assets/img/r-pair-<metall>-900.*`). Zum Testen in so einer Umgebung: `?gl=1` an die Adresse.
-- Videos neu aufnehmen (nach Änderungen am Ringpaar): Einzelbilder mit der Testseite `.dev/t.html`
-  (`mode: pair`, Spiegelung an, Ansicht `0.6 + 2π·i/600, 0.3, 1`, 960 × 960, transparent) und dann mit ffmpeg
-  zusammensetzen: Farbe über Schwarz und Deckkraft übereinander (`vstack`), H.264, `-crf 27` (640er: `-crf 26`),
-  `-g 300`, BT.709.
+- Geräte ohne Grafikbeschleunigung (WebGL nur per Software): Der Baukasten startet 3D erst beim Bedienen, bis dahin
+  steht das Standbild. Zum Testen in so einer Umgebung: `?gl=1` an die Adresse.
