@@ -1472,44 +1472,359 @@ var ue = (e) => Math.min(window.devicePixelRatio || 1, e),
   },
   et = (e, a = 700) => ("requestIdleCallback" in window ? requestIdleCallback(e, { timeout: a }) : setTimeout(e, 200)),
   tt = { gelbgold: "Gelbgold 585", rosegold: "Ros\xE9gold 585", weissgold: "Wei\xDFgold 585", platin: "Platin 950" };
+// Zeichnet ein Video mit Transparenz: obere Bildhälfte Farbe, untere Hälfte Deckkraft. Ein Viereck, ein winziger
+// Shader – kostet fast nichts und läuft überall dort, wo H.264 von der Hardware dekodiert wird.
+function alphaVideo(canvas) {
+  let gl = null;
+  try {
+    gl = canvas.getContext("webgl", { alpha: !0, premultipliedAlpha: !0, antialias: !1, depth: !1, stencil: !1, powerPreference: "low-power" });
+  } catch {}
+  if (!gl) return null;
+  let sh = (type, src) => {
+      let s = gl.createShader(type);
+      return (gl.shaderSource(s, src), gl.compileShader(s), s);
+    },
+    prog = gl.createProgram();
+  (gl.attachShader(prog, sh(gl.VERTEX_SHADER, "attribute vec2 p;varying vec2 u;void main(){u=p*.5+.5;gl_Position=vec4(p,0.,1.);}")),
+    gl.attachShader(
+      prog,
+      sh(
+        gl.FRAGMENT_SHADER,
+        "precision mediump float;uniform sampler2D a,b;uniform float k;varying vec2 u;vec4 px(sampler2D t){float al=texture2D(t,vec2(u.x,u.y*.5)).g;vec3 c=(texture2D(t,vec2(u.x,.5+u.y*.5)).rgb);return vec4(min(c,vec3(al)),al);}void main(){vec4 x=px(a);gl_FragColor=k>0.?mix(x,px(b),k):x;}",
+      ),
+    ),
+    gl.linkProgram(prog));
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+  gl.useProgram(prog);
+  let buf = gl.createBuffer();
+  (gl.bindBuffer(gl.ARRAY_BUFFER, buf), gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW));
+  let loc = gl.getAttribLocation(prog, "p");
+  (gl.enableVertexAttribArray(loc), gl.vertexAttribPointer(loc, 2, gl.FLOAT, !1, 0, 0), gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !0));
+  let tex = [0, 1].map((i) => {
+      let t = gl.createTexture();
+      return (
+        gl.activeTexture(gl.TEXTURE0 + i),
+        gl.bindTexture(gl.TEXTURE_2D, t),
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR),
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR),
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE),
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE),
+        t
+      );
+    }),
+    uk = gl.getUniformLocation(prog, "k"),
+    lost = !1;
+  (gl.uniform1i(gl.getUniformLocation(prog, "a"), 0),
+    gl.uniform1i(gl.getUniformLocation(prog, "b"), 1),
+    canvas.addEventListener("webglcontextlost", (ev) => {
+      (ev.preventDefault(), (lost = !0));
+    }));
+  return {
+    // a: sichtbares Video, b: optional das Video, in das gerade übergeblendet wird (k = 0…1)
+    draw(a, b, k) {
+      if (lost || !a || a.readyState < 2 || !a.videoWidth) return !1;
+      let w = a.videoWidth,
+        h = a.videoHeight >> 1;
+      (canvas.width !== w || canvas.height !== h) && ((canvas.width = w), (canvas.height = h), gl.viewport(0, 0, w, h));
+      try {
+        (gl.activeTexture(gl.TEXTURE0), gl.bindTexture(gl.TEXTURE_2D, tex[0]), gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, a));
+        let mix = b && b.readyState >= 2 && k > 0;
+        (mix && (gl.activeTexture(gl.TEXTURE1), gl.bindTexture(gl.TEXTURE_2D, tex[1]), gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, b)),
+          gl.uniform1f(uk, mix ? k : 0),
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4));
+      } catch {
+        return !1;
+      }
+      return !0;
+    },
+  };
+}
+
+// Hero: Die Drehung des Ringpaars läuft als vorab aufgenommenes Video (kostet kaum Rechenleistung, sieht auf jedem
+// Gerät gleich aus). Erst wenn jemand den Ring anfasst, übernimmt die Echtzeit-Ansicht an genau derselben Stelle –
+// und gibt nach ein paar Sekunden Ruhe wieder an das Video ab.
 function nt() {
   let e = c('[data-ring="hero"]');
-  if (!e || !ce()) return;
-  let a = c("canvas", e),
-    t = e.closest("section"),
-    n = c("[data-metal-label]", t),
-    s = R.get("rubin-hero-metal"),
-    i = (r) => {
-      (v("[data-metal]", t).forEach((d) => d.setAttribute("aria-pressed", String(d.dataset.metal === r))), n && ((n.textContent = tt[r] || ""), le(n)));
+  if (!e) return;
+  let fx = c(".stage-fx", e) || e,
+    live = c("canvas:not(.turn)", e),
+    sec = e.closest("section"),
+    label = c("[data-metal-label]", sec),
+    METALS = ["gelbgold", "rosegold", "weissgold", "platin"],
+    TAU = Math.PI * 2,
+    T = 20, // Sekunden je Umdrehung im Video
+    Y0 = 0.6, // Drehwinkel im ersten Bild (wie das Standbild)
+    W = TAU / T,
+    metal = R.get("rubin-hero-metal"),
+    mark = (m) => {
+      (v("[data-metal]", sec).forEach((d) => d.setAttribute("aria-pressed", String(d.dataset.metal === m))), label && ((label.textContent = tt[m] || ""), le(label)));
     };
-  s && i(s);
-  let o = async () => {
-    try {
-      let { createRingViewer: r } = await de(),
-        l = r(a, {
-          mode: "pair",
-          autoRotate: !0,
-          interactive: !0,
-          preserve: !0,
-          fontFamily: '"Fraunces"',
-          restPitch: 0.3,
-          reflect: !0,
-          state: { mode: "pair", metal: s || "gelbgold" },
-          onReady: () => {
-            ($ ? l.setView(0.6, 0.3, 1) : (l.setView(-0.15, 0.52, 0.86), l.frame({ yaw: 0.6, pitch: 0.3, zoom: 1, auto: !0 })), fe(e));
-          },
+  METALS.includes(metal) ? mark(metal) : (metal = "gelbgold");
+  let conn = navigator.connection,
+    probe = document.createElement("video"),
+    canVideo = !$ && !(conn && (conn.saveData || /2g/.test(conn.effectiveType || ""))) && !!probe.canPlayType && probe.canPlayType('video/mp4; codecs="avc1.640028"') !== "",
+    can3d = ce(),
+    mode = "poster", // poster | turn (Video) | live (Echtzeit)
+    vids = {},
+    cur = null,
+    next = null,
+    mixK = 0,
+    turn = null,
+    viewer = null,
+    booting = null,
+    inView = !0,
+    handing = !1,
+    touched = 0, // letzte Bedienung der Echtzeit-Ansicht
+    swapId = 0,
+    down = null,
+    frame = () => new Promise((r) => requestAnimationFrame(r)),
+    paint = () => {
+      mode !== "live" && turn && cur && turn.draw(cur, next, mixK) && mode === "poster" && ((mode = "turn"), e.classList.add("is-turn"));
+    },
+    get = (m) => {
+      if (vids[m]) return vids[m];
+      let d = document.createElement("video"),
+        px = Math.min(fx.clientWidth, fx.clientHeight) * Math.min(window.devicePixelRatio || 1, 3);
+      ((d.muted = d.loop = d.playsInline = !0),
+        d.setAttribute("muted", ""),
+        d.setAttribute("playsinline", ""),
+        d.setAttribute("aria-hidden", "true"),
+        (d.tabIndex = -1),
+        (d.preload = "auto"),
+        (d.disablePictureInPicture = !0),
+        (d.className = "turn-src"),
+        (d.src = `assets/video/ring-${m}-${px > 760 ? 960 : 640}.mp4`),
+        // lässt sich eine Aufnahme nicht laden, zeigt die Echtzeit-Ansicht dieses Metall
+        d.addEventListener("error", () => {
+          ((d._bad = !0),
+            metal === m &&
+              mode !== "live" &&
+              boot().then((l) => {
+                l && metal === m && mode !== "live" && goLive(mode === "turn");
+              }));
+        }),
+        fx.appendChild(d));
+      // jedes neue Videobild einmal zeichnen – nicht öfter
+      let on = (now, meta) => {
+        ((d._t = meta ? meta.mediaTime : d.currentTime), (d._fresh = !0), (d === cur || d === next) && paint(), d.requestVideoFrameCallback(on));
+      };
+      if (d.requestVideoFrameCallback) d.requestVideoFrameCallback(on);
+      else {
+        let last = -1,
+          loop = () => {
+            (mode !== "live" && inView && !document.hidden && d.readyState >= 2 && d.currentTime !== last && ((last = d._t = d.currentTime), (d._fresh = !0), (d === cur || d === next) && paint()),
+              requestAnimationFrame(loop));
+          };
+        loop();
+      }
+      return (vids[m] = d);
+    },
+    play = (d) => {
+      let p = d.play();
+      p && p.catch(() => {});
+    },
+    // manche Handy-Browser laden ein Video erst, wenn es abgespielt wird – darum kurz anspielen
+    ready = (d) =>
+      d.readyState >= 2
+        ? Promise.resolve(!0)
+        : (play(d),
+          new Promise((r) => {
+            (d.addEventListener("loadeddata", () => r(!0), { once: !0 }), d.addEventListener("error", () => r(!1), { once: !0 }));
+          })),
+    // ein Video an eine Stelle setzen und warten, bis genau dieses Bild vorliegt
+    seek = async (d, t, alive) => {
+      t = ((t % T) + T) % T;
+      (d.pause(), (d._t = -1), (d.currentTime = t));
+      let t0 = performance.now(),
+        off = () => Math.abs(((d._t - t + T * 1.5) % T) - T / 2);
+      // fertig ist der Sprung erst, wenn ein Bild von der gewünschten Stelle wirklich vorliegt
+      while (d.seeking || d._t < 0 || off() > 0.12) {
+        if (performance.now() - t0 > 3e3 || !alive()) return !1;
+        await frame();
+      }
+      return !0;
+    },
+    startTurn = () => {
+      if (!canVideo || mode !== "poster" || cur) return;
+      if (!(turn = turn || alphaVideo(c("canvas.turn", e)))) {
+        canVideo = !1;
+        return;
+      }
+      ((cur = get(metal)), inView && !document.hidden && play(cur));
+    },
+    boot = () =>
+      booting ||
+      (booting = (async () => {
+        if (!can3d) return null;
+        try {
+          let { createRingViewer: make } = await de();
+          return await new Promise((res) => {
+            let l = make(live, {
+              mode: "pair",
+              autoRotate: !0,
+              autoSpeed: W,
+              contain: !0,
+              interactive: !0,
+              preserve: !0,
+              fontFamily: '"Fraunces"',
+              restPitch: 0.3,
+              reflect: !0,
+              state: { mode: "pair", metal },
+              onReady: () => {
+                (l.sleep(), l.setView(Y0, 0.3, 1), (viewer = l), res(l));
+              },
+            });
+            window.addEventListener("pageswap", () => mode === "live" && l.renderNow());
+          });
+        } catch (x) {
+          return (console.warn("3D ring unavailable", x), (can3d = !1), null);
+        }
+      })()),
+    // Echtzeit übernimmt genau das Bild, das das Video gerade zeigt
+    goLive = (turning) => {
+      if (mode === "live" || !viewer) return;
+      let y = cur && cur._t != null ? Y0 + (TAU * (cur._t % T)) / T : Y0;
+      (swapId++,
+        next && ((cur = next), (next = null), (mixK = 0)),
+        Object.values(vids).forEach((d) => d.pause()),
+        viewer.set({ metal }),
+        viewer.takeover(y, turning),
+        (touched = performance.now()),
+        (mode = "live"),
+        e.classList.add("is-live"),
+        e.classList.remove("is-turn"));
+    },
+    // Rückgabe an das Video: sobald der Ring wieder ruhig weiterdreht, an derselben Stelle weiterlaufen lassen
+    goTurn = async () => {
+      if (mode !== "live" || handing || !canVideo || !viewer || !inView || document.hidden) return;
+      let p = viewer.pose(),
+        quiet = performance.now() - touched,
+        // Geräte, die die Echtzeit-Ansicht nur mühsam schaffen, geben früher und ohne Feinabstimmung ab
+        force = quiet > (p.ms > 45 ? 3500 : 9e3);
+      if (p.dragging || p.busy) return;
+      if (!force && (!p.spinning || Math.abs(p.pitch - 0.3) > 0.004 || Math.abs(p.zoom - 1) > 0.004 || p.speed < p.target * 0.985)) return;
+      if (!(turn = turn || alphaVideo(c("canvas.turn", e)))) {
+        canVideo = !1;
+        return;
+      }
+      let d = get(metal);
+      if (d._bad || d.readyState < 2) return;
+      handing = !0;
+      try {
+        let ok = () => mode === "live" && !viewer.pose().dragging && (force || viewer.pose().spinning),
+          yt = p.yaw + (force ? 0 : W * 0.4);
+        if (!(await seek(d, ((yt - Y0) / TAU) * T, ok))) return;
+        if (!force) {
+          let yf = Y0 + (TAU * d._t) / T;
+          yf += TAU * Math.round((yt - yf) / TAU);
+          let t0 = performance.now();
+          while (viewer.pose().yaw < yf - W / 120) {
+            if (!ok() || performance.now() - t0 > 4e3) return;
+            await frame();
+          }
+          if (!ok() || viewer.pose().yaw > yf + W * 0.1) return; // verpasst – beim nächsten Mal
+        }
+        // deckungsgleich: harter Wechsel. Erzwungen: die Echtzeit-Ansicht blendet kurz über dem Video aus.
+        ((live.style.transition = force ? "opacity .3s" : ""),
+          (cur = d),
+          (next = null),
+          (mixK = 0),
+          (mode = "turn"),
+          turn.draw(cur),
+          e.classList.add("is-turn"),
+          e.classList.remove("is-live"),
+          play(d),
+          viewer.sleep(),
+          force && setTimeout(() => (live.style.transition = ""), 400));
+      } finally {
+        handing = !1;
+      }
+    },
+    // anderes Metall: die beiden Aufnahmen laufen kurz deckungsgleich und blenden ineinander
+    swap = async (m) => {
+      let id = ++swapId,
+        ok = () => id === swapId && mode === "turn";
+      next && ((cur = next), (next = null), (mixK = 0));
+      let d = get(m);
+      if (d === cur) return;
+      if (d._bad || !(await ready(d)) || !ok()) return;
+      let synced = await seek(d, (cur._t > 0 ? cur._t : cur.currentTime) + 0.35, ok);
+      if (!ok()) return;
+      if (synced) {
+        let t0 = performance.now();
+        while ((cur.currentTime - d._t + T) % T > T / 2) {
+          if (!ok() || performance.now() - t0 > 3e3) return;
+          await frame();
+        }
+        if (!ok()) return;
+      }
+      // gelingt der Gleichlauf nicht (sehr langsame Verbindung), wird trotzdem übergeblendet
+      ((next = d), play(d));
+      let s = performance.now();
+      for (;;) {
+        await frame();
+        if (!ok()) return;
+        let k = Math.min(1, (performance.now() - s) / 420);
+        ((mixK = k * k * (3 - 2 * k)), paint());
+        if (k >= 1) break;
+      }
+      let old = cur;
+      ((cur = d), (next = null), (mixK = 0), old.pause());
+    },
+    setMetal = (m) => {
+      if (m === metal || !METALS.includes(m)) return;
+      ((metal = m), mark(m), R.set("rubin-hero-metal", m), (touched = performance.now()), viewer && mode !== "live" && viewer.set({ metal: m }));
+      if (mode === "live") (viewer.set({ metal: m }), canVideo && get(m));
+      else if (mode === "turn") swap(m);
+      else if (canVideo) startTurn();
+      else
+        boot().then((l) => {
+          l && mode !== "live" && goLive(!1);
         });
-      (window.addEventListener("pageswap", () => l.renderNow()),
-        v("[data-metal]", t).forEach((f) =>
-          f.addEventListener("click", () => {
-            (i(f.dataset.metal), l.set({ metal: f.dataset.metal }), R.set("rubin-hero-metal", f.dataset.metal));
-          }),
-        ));
-    } catch (r) {
-      console.warn("3D ring unavailable", r);
+    };
+  v("[data-metal]", sec).forEach((b) => b.addEventListener("click", () => setMetal(b.dataset.metal)));
+
+  // Anfassen: Echtzeit übernimmt. Läuft sie noch nicht, wird sie jetzt gestartet und steigt in die laufende Geste ein.
+  let take = (ev) => {
+    if (mode === "live") return;
+    if (viewer) {
+      goLive(!1);
+      return;
     }
+    boot().then((l) => {
+      if (!l || mode === "live" || !down) return;
+      (goLive(!1), live.dispatchEvent(new PointerEvent("pointerdown", { pointerId: down.pointerId, pointerType: down.pointerType, isPrimary: !0, clientX: down.x, clientY: down.y, bubbles: !0 })));
+    });
   };
-  he(e, () => et(o, 600));
+  (e.addEventListener(
+    "pointerdown",
+    (ev) => {
+      if (!ev.isTrusted) return;
+      ((down = { pointerId: ev.pointerId, pointerType: ev.pointerType, x: ev.clientX, y: ev.clientY }), (touched = performance.now()), take(ev));
+    },
+    !0,
+  ),
+    e.addEventListener("pointermove", (ev) => down && ev.pointerId === down.pointerId && ((down.x = ev.clientX), (down.y = ev.clientY), (touched = performance.now())), !0),
+    ["pointerup", "pointercancel"].forEach((n) => window.addEventListener(n, (ev) => down && ev.pointerId === down.pointerId && ((down = null), (touched = performance.now())), !0)),
+    e.addEventListener(
+      "keydown",
+      (ev) => {
+        /^Arrow/.test(ev.key) && ((touched = performance.now()), viewer ? goLive(!1) : boot());
+      },
+      !0,
+    ),
+    // Maus über dem Ring: die Echtzeit-Ansicht schon vorbereiten, damit das Ziehen sofort greift
+    e.addEventListener("pointerenter", (ev) => ev.pointerType === "mouse" && can3d && et(boot, 400)),
+    setInterval(() => mode === "live" && goTurn(), 250),
+    new IntersectionObserver(
+      (en) => {
+        ((inView = en[0].isIntersecting), mode === "turn" && cur && (inView && !document.hidden ? play(cur) : cur.pause()));
+      },
+      { threshold: 0.02 },
+    ).observe(e),
+    document.addEventListener("visibilitychange", () => mode === "turn" && cur && (document.hidden || !inView ? cur.pause() : play(cur))));
+  // ohne Video (weniger Bewegung gewünscht, Datensparmodus): Standbild; die Echtzeit-Ansicht startet beim Anfassen
+  canVideo && (document.readyState === "complete" ? et(startTurn, 500) : window.addEventListener("load", () => et(startTurn, 500), { once: !0 }));
 }
 // ---------- Ring-Studio und Ring-Baukasten ----------
 var ALLOY = { gelbgold: "Gelbgold", weissgold: "Wei\xDFgold", rosegold: "Ros\xE9gold", rotgold: "Rotgold", platin: "Platin", bicolor: "Bicolor Gelb-/Wei\xDFgold" },
@@ -1663,14 +1978,17 @@ function at() {
     e.classList.add("no-3d");
     return;
   }
-  he(
-    e,
-    async () => {
+  // Die 3D-Ansicht startet erst, wenn sie gebraucht wird: beim Bedienen oder wenn der Abschnitt einen Moment im Bild steht.
+  // Im Leerlauf rechnet sie nicht – gezeichnet wird nur, wenn sich etwas ändert.
+  let started = !1,
+    start = async () => {
+      if (started) return;
+      started = !0;
       try {
         let [{ createRingViewer: make }] = await Promise.all([de(), be()]);
         ((viewer = make(c("canvas", stage), {
           mode: "single",
-          autoRotate: !0,
+          autoRotate: !1,
           interactive: !0,
           preserve: !0,
           reflect: !0,
@@ -1687,8 +2005,14 @@ function at() {
         (console.warn("3D ring unavailable", x), e.classList.add("no-3d"));
       }
     },
-    "60% 0px",
-  );
+    dwell = 0;
+  (["pointerdown", "focusin"].forEach((n) => e.addEventListener(n, start, { once: !0, passive: !0 })),
+    new IntersectionObserver(
+      (en, io) => {
+        (clearTimeout(dwell), started ? io.disconnect() : en[0].isIntersecting && (dwell = setTimeout(start, 700)));
+      },
+      { threshold: 0.45 },
+    ).observe(stage));
 }
 
 function lt() {
@@ -1863,7 +2187,7 @@ function lt() {
       if (!ce()) return;
       ((viewer = m.createRingViewer(c("canvas", stage), {
         mode: "single",
-        autoRotate: !0,
+        autoRotate: !1,
         interactive: !0,
         preserve: !0,
         reflect: !0,

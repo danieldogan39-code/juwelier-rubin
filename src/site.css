@@ -7799,9 +7799,16 @@ a.gbadge {
   .voice-list[aria-hidden] {
     display: none;
   }
+  .ticker {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ticker::-webkit-scrollbar {
+    display: none;
+  }
   .ticker-track {
-    flex-wrap: wrap;
-    width: auto;
+    flex-wrap: nowrap;
+    width: max-content;
   }
   [data-parallax],
   [data-drift] {
@@ -8654,8 +8661,106 @@ html:not(.js) .builder-fallback {
 .builder-stage .poster,
 .studio-stage-wrap .stage canvas,
 .studio-stage-wrap .stage .poster,
-.hero-stage .stage canvas,
-.hero-stage .stage .poster {
+.hero-stage canvas,
+.hero-stage .poster {
   -webkit-mask-image: linear-gradient(to bottom, #000 0 86%, transparent 99%);
   mask-image: linear-gradient(to bottom, #000 0 86%, transparent 99%);
+}
+
+/* ---------- Hero: aufgenommene Drehung (Video) und Echtzeit-Ansicht wechseln sich ab ---------- */
+.turn-src {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+.stage canvas.turn {
+  object-fit: contain;
+  pointer-events: none;
+  cursor: auto;
+  opacity: 0;
+  transition: none;
+}
+.stage.is-turn canvas.turn {
+  opacity: 1;
+}
+.stage.is-live canvas.turn {
+  opacity: 0;
+}
+.stage.is-turn .poster {
+  opacity: 0;
+  transition: none;
+}
+/* Übergabe zwischen Video und Echtzeit ohne Blende: beide zeigen in dem Moment dasselbe Bild */
+.hero-stage canvas {
+  transition: none;
+}
+
+/* ---------- Feinschliff für kleine Bildschirme ---------- */
+.brand img {
+  object-fit: contain;
+}
+.fstore-name a {
+  padding-block: 0.5rem;
+  margin-block: -0.5rem;
+}
+@media (max-width: 699px) {
+  /* Endet eine Seite schon mit einem Terminaufruf, wiederholt der Footer ihn am Handy nicht */
+  main:has(> .cta-block:last-child) ~ .site-footer .footer-cta {
+    display: none;
+  }
+  /* Seiten mit eigener Filialliste zeigen die Filialkarten im Footer am Handy nicht ein zweites Mal */
+  main:has(.store-list) ~ .site-footer .footer-stores,
+  main:has(.store-list) ~ .site-footer .footer-stores-head {
+    display: none;
+  }
+  main:has(> .cta-block:last-child) ~ .site-footer .footer-stores-head,
+  main:has(> .cta-block:last-child):has(.store-list) ~ .site-footer .footer-nav {
+    border-top: 0;
+  }
+}
+@media (max-width: 359px) {
+  .display {
+    font-size: 2.2rem;
+  }
+  .h1 {
+    font-size: 2rem;
+  }
+  .h2 {
+    font-size: 1.55rem;
+  }
+  .builder-tabs button {
+    padding-inline: 0.42rem;
+    font-size: 0.76rem;
+  }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  /* Querformat am Handy: Metallauswahl senkrecht am rechten Rand, nicht über dem Spiegelbild des Rings */
+  .hero-controls {
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+  }
+  .metal-rail {
+    flex-direction: column;
+    margin-left: 0;
+  }
+  .hero-stage .stage-fx {
+    inset: 4% 9% 2% 0;
+  }
+}
+/* Der Textblock liegt über der Ringbühne: Er lässt Zeiger und Finger durch, damit sich der Ring greifen lässt */
+.hero-inner {
+  pointer-events: none;
+}
+.hero-inner > * {
+  pointer-events: auto;
+}
+@media (max-width: 699px) {
+  main:has(> .cta-block:last-child) ~ .site-footer {
+    padding-top: 0.6rem;
+  }
 }

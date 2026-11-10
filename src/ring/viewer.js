@@ -182,7 +182,8 @@ export function createRingViewer(canvas, opts = {}) {
   let yawT = null, pitchT = null, zoomT = 1;
   let restPitch = o.restPitch || 0;
   let pitchMin = -0.9, pitchMax = 0.9;
-  let auto = o.autoRotate, autoSpeed = 0;
+  let auto = o.autoRotate, autoSpeed = 0, spinning = false;
+  const spinSpeed = o.autoSpeed || 0.22; // rad/s im Leerlauf
   let dragging = false, lastX = 0, lastY = 0, lastMove = 0;
   let history = [];
   let idleSince = performance.now();
@@ -279,7 +280,13 @@ export function createRingViewer(canvas, opts = {}) {
     if (ground) ground.resize(w * ratio * (coarse ? 0.5 : 0.75), h * ratio * (coarse ? 0.5 : 0.75));
     camera.aspect = w / h;
     // Bildausschnitt: frei schwebende Stücke nach festem Maß, aufliegende Szenen nach ihrer Ausdehnung
-    const need = extent && !fit ? Math.max((extent.h + extent.w * 0.3) * 1.08, (extent.w * 1.08) / camera.aspect) : fit / Math.min(1, camera.aspect);
+    // contain: Ausschnitt wie ein quadratisches Standbild, das in die Fläche eingepasst wird – so decken sich
+    // Standbild, vorab aufgenommene Drehung und Echtzeit-Ansicht exakt.
+    const need = extent && !fit
+      ? o.contain
+        ? Math.max((extent.h + extent.w * 0.3) * 1.08, extent.w * 1.08) / Math.min(1, camera.aspect)
+        : Math.max((extent.h + extent.w * 0.3) * 1.08, (extent.w * 1.08) / camera.aspect)
+      : fit / Math.min(1, camera.aspect);
     dist = need / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     place();
     dirty = true;
@@ -299,15 +306,17 @@ export function createRingViewer(canvas, opts = {}) {
   }
 
   let raf = 0, last = performance.now(), idleTimer = 0;
-  let slow = 0, fast = 0;
+  let slow = 0, fast = 0, frameMs = 16;
   function tick(now) {
     raf = 0;
     if (!alive || !visible || document.hidden) return;
     const ms = now - last;
-    const dt = Math.min(0.05, ms / 1000);
+    const dt = Math.min(0.25, ms / 1000); // auch bei wenigen Bildern pro Sekunde läuft die Bewegung in Echtzeit
+    if (ms < 1000) frameMs += (ms - frameMs) * 0.15;
     last = now;
     let moving = false;
     const idle = now - idleSince > 2200;
+    spinning = false;
 
     if (!dragging) {
       // Drehung um die Hochachse: Ziel anfahren, sonst Schwung ausrollen lassen, sonst ruhig weiterdrehen
@@ -320,9 +329,9 @@ export function createRingViewer(canvas, opts = {}) {
         yaw.v *= Math.exp(-dt / 0.42); // Reibung
         moving = true;
       } else if (auto && !reduced && idle) {
-        autoSpeed += (0.22 - autoSpeed) * (1 - Math.exp(-dt / 0.9)); // sanft anlaufen
+        autoSpeed += (spinSpeed - autoSpeed) * (1 - Math.exp(-dt / 0.9)); // sanft anlaufen
         yaw.x += autoSpeed * dt;
-        moving = true;
+        moving = spinning = true;
       }
       // Neigung: Ziel, Schwung, und an den Grenzen federt die Ansicht zurück
       const out = pitch.x > pitchMax || pitch.x < pitchMin;
@@ -449,6 +458,27 @@ export function createRingViewer(canvas, opts = {}) {
       if (typeof z === "number") ((zoom.x = zoomT = z), (zoom.v = 0), place());
       dirty = true;
       wake();
+    },
+    // Lage und Bewegungszustand – damit die Seite zwischen aufgenommener Drehung und Echtzeit übergeben kann
+    pose: () => ({ yaw: yaw.x, pitch: pitch.x, zoom: zoom.x, dragging, spinning, speed: autoSpeed, target: spinSpeed, busy: fades.length > 0 || !!rebuildQueued, ms: frameMs }),
+    // Übernahme aus der aufgenommenen Drehung: gleiche Lage, auf Wunsch gleich in voller Drehgeschwindigkeit weiter
+    takeover(y, turning) {
+      yaw.x = y;
+      pitch.x = clamp(restPitch, pitchMin, pitchMax);
+      zoom.x = zoomT = 1;
+      yaw.v = pitch.v = zoom.v = 0;
+      yawT = pitchT = null;
+      auto = o.autoRotate;
+      autoSpeed = turning ? spinSpeed : 0;
+      idleSince = performance.now() - (turning ? 2300 : 0);
+      last = performance.now();
+      place();
+      draw();
+      wake();
+    },
+    sleep() {
+      auto = false;
+      spinning = false;
     },
     setTime() {},
     glints() {},

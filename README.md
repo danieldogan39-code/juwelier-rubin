@@ -39,3 +39,19 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
 - Die Standbilder `assets/img/r-*.avif/.webp` sind Aufnahmen aus demselben Modul. Wer am Modul etwas ändert,
   sollte sie neu aufnehmen. Zustand und Ansicht jedes Bildes stehen in `src/ring/standbilder.json`.
 - Das Logo-Intro der Startseite ist `assets/brand/rubin-intro.svg` (zeichnet das Logo aus seinen Bauteilen).
+
+## Rechenlast
+
+- **Hero:** Die Drehung des Ringpaars ist vorab aufgenommen (`assets/video/ring-<metall>-960.mp4` und `-640.mp4`,
+  20 s je Umdrehung, 30 Bilder/s). Jedes Video enthält oben die Farbe und unten die Deckkraft; ein kleines
+  WebGL-Viereck setzt beides zusammen (`alphaVideo` in `src/site.js`). So bleibt der Hintergrund durchsichtig und
+  jedes Gerät mit H.264-Decoder spielt es ab.
+- Die Echtzeit-Ansicht startet im Hero erst beim Anfassen (Maus über dem Ring, Finger, Pfeiltasten), übernimmt
+  genau das Bild des Videos und gibt nach ein paar Sekunden Ruhe wieder an das Video ab.
+- Baukasten und Ring-Studio zeichnen nur, wenn sich etwas ändert. Der Baukasten startet seine 3D-Ansicht erst beim
+  Bedienen oder wenn er kurz im Bild steht.
+- „Weniger Bewegung“ oder Datensparmodus: kein Video, Standbild; 3D beim Anfassen.
+- Videos neu aufnehmen (nach Änderungen am Ringpaar): Einzelbilder mit der Testseite `.dev/t.html`
+  (`mode: pair`, Spiegelung an, Ansicht `0.6 + 2π·i/600, 0.3, 1`, 960 × 960, transparent) und dann mit ffmpeg
+  zusammensetzen: Farbe über Schwarz und Deckkraft übereinander (`vstack`), H.264, `-crf 27` (640er: `-crf 26`),
+  `-g 300`, BT.709.
