@@ -1850,6 +1850,112 @@ function lt() {
   })();
 }
 // Kundenstimmen: Themen (wie viele Stimmen nennen sie?) und je eine Stimme groß. Gezählt wird aus den Texten selbst.
+// Hero der Startseite: fünf Szenen im Vollbild. Die Wortliste schaltet sie um (Zeiger darüber, Tippen, Pfeiltasten,
+// seitliches Wischen); ohne Zutun wechselt die Szene von selbst. Bilder der weiteren Szenen laden erst nach dem ersten.
+function heroInit() {
+  let hero = c("[data-hero]");
+  if (!hero) return;
+  let tabs = v(".hline", hero),
+    scenes = v(".hscene", hero),
+    panels = v(".hpanel", hero),
+    count = c("[data-hero-count]", hero),
+    pause = c("[data-hero-pause]", hero),
+    n = tabs.length,
+    cur = 0,
+    shown = 0,
+    timer = 0,
+    token = 0,
+    conn = navigator.connection,
+    saver = !!(conn && (conn.saveData || /2g/.test(conn.effectiveType || ""))),
+    canAuto = !$ && !saver && n > 1;
+  hwGL || hero.classList.add("is-lite");
+  let load = (i) => {
+      let sc = scenes[i];
+      if (!sc) return Promise.resolve();
+      if (sc._p) return sc._p;
+      let img = c("img", sc);
+      (v("source[data-srcset]", sc).forEach((el) => ((el.srcset = el.dataset.srcset), el.removeAttribute("data-srcset"))),
+        img.dataset.src && ((img.src = img.dataset.src), img.removeAttribute("data-src")));
+      return (sc._p = img.decode ? img.decode().catch(() => {}) : Promise.resolve());
+    },
+    show = (i, dir) => {
+      if (i === shown) return;
+      let prev = shown;
+      (clearTimeout(timer),
+        scenes.forEach((sc, k) => (sc.classList.remove("is-in", "is-out"), sc.classList.toggle("is-on", k === prev))),
+        scenes[prev].style.setProperty("--dir", dir),
+        scenes[i].style.setProperty("--dir", dir),
+        scenes[i].offsetWidth,
+        scenes[prev].classList.add("is-out"),
+        scenes[i].classList.add("is-in"),
+        (shown = i),
+        (timer = setTimeout(() => {
+          (scenes[prev].classList.remove("is-on", "is-out"), scenes[i].classList.remove("is-in"), scenes[i].classList.add("is-on"));
+        }, 1100)));
+    },
+    go = (i, dir) => {
+      if (((i = (i + n) % n), i === cur)) return;
+      dir = dir || (i > cur ? 1 : -1);
+      ((cur = i),
+        tabs.forEach((t, k) => {
+          let on = k === i;
+          (t.classList.toggle("is-on", on), t.setAttribute("aria-selected", on ? "true" : "false"), (t.tabIndex = on ? 0 : -1));
+        }),
+        panels.forEach((p, k) => p.classList.toggle("is-on", k === i)),
+        count && (count.textContent = String(i + 1).padStart(2, "0")));
+      let mine = ++token;
+      (Promise.race([load(i), new Promise((r) => setTimeout(r, 1600))]).then(() => mine === token && show(i, dir)), saver || load((i + 1) % n));
+    },
+    setAuto = (on) => {
+      (hero.classList.toggle("is-auto", on),
+        pause && (pause.setAttribute("aria-pressed", on ? "false" : "true"), (c(".sr-only", pause).textContent = on ? "Bildwechsel anhalten" : "Bildwechsel fortsetzen")));
+    };
+  tabs.forEach((t, i) => {
+    let intent = 0;
+    (t.addEventListener("click", () => (setAuto(!1), go(i))),
+      t.addEventListener("pointerenter", (e) => e.pointerType === "mouse" && (intent = setTimeout(() => go(i), 110))),
+      t.addEventListener("pointerleave", () => clearTimeout(intent)),
+      t.addEventListener("keydown", (e) => {
+        let k = e.key,
+          to = k === "ArrowDown" || k === "ArrowRight" ? cur + 1 : k === "ArrowUp" || k === "ArrowLeft" ? cur - 1 : k === "Home" ? 0 : k === "End" ? n - 1 : null;
+        to !== null && (e.preventDefault(), setAuto(!1), go(to), tabs[cur].focus());
+      }));
+  });
+  // seitliches Wischen blättert, senkrechtes scrollt wie gewohnt
+  let sx = 0,
+    sy = 0,
+    st = 0;
+  (hero.addEventListener(
+    "touchstart",
+    (e) => {
+      let p = e.touches[0];
+      ((sx = p.clientX), (sy = p.clientY), (st = e.touches.length === 1 ? performance.now() : 0));
+    },
+    { passive: !0 },
+  ),
+    hero.addEventListener(
+      "touchend",
+      (e) => {
+        let p = e.changedTouches[0],
+          dx = p.clientX - sx,
+          dy = p.clientY - sy;
+        st && performance.now() - st < 700 && Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.8 && (setAuto(!1), go(cur + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1));
+      },
+      { passive: !0 },
+    ));
+  if (!canAuto) return void (saver || et(() => load(1), 2500));
+  let inner = c(".hero-inner", hero);
+  (pause && ((pause.hidden = !1), pause.addEventListener("click", () => setAuto(!hero.classList.contains("is-auto")))),
+    hero.addEventListener("animationend", (e) => e.animationName === "hero-bar" && hero.classList.contains("is-auto") && go(cur + 1, 1)),
+    v(".hline, .hero-side", hero).forEach((el) => {
+      (el.addEventListener("pointerenter", (e) => e.pointerType === "mouse" && hero.classList.add("is-hold")), el.addEventListener("pointerleave", () => hero.classList.remove("is-hold")));
+    }),
+    inner.addEventListener("focusin", () => hero.classList.add("is-hold")),
+    inner.addEventListener("focusout", () => hero.classList.remove("is-hold")),
+    H(hero, (on) => hero.classList.toggle("is-away", !on), { threshold: 0.35 }),
+    window.addEventListener("load", () => et(() => (load(1), setAuto(!0)), 1500), { once: !0 }),
+    document.readyState === "complete" && et(() => (load(1), setAuto(!0)), 1500));
+}
 function voicesInit() {
   v("[data-voices]").forEach((sec) => {
     let items = v(".vq", sec),
@@ -2027,7 +2133,7 @@ function ut() {
   };
   document.readyState === "complete" ? d() : window.addEventListener("load", d, { once: !0 });
 }
-var ft = [Le, xe, $e, Te, Ve, ut, Fe, Me, Se, Ae, Ie, Re, Ue, ze, Be, Ne, He, Je, Ke, Ze, ct, dt, at, lt, voicesInit];
+var ft = [Le, xe, $e, Te, Ve, ut, Fe, Me, Se, Ae, Ie, Re, Ue, ze, Be, Ne, He, Je, Ke, Ze, ct, dt, at, lt, voicesInit, heroInit];
 ft.forEach((e) => {
   try {
     e();
