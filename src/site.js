@@ -2265,20 +2265,84 @@ function lt() {
     }
   })();
 }
-// „Mehr anzeigen“: blendet einen Bereich ein und wieder aus
-function moreToggles() {
-  v("[data-more]").forEach((b) =>
-    b.addEventListener("click", () => {
-      let t = document.getElementById(b.getAttribute("aria-controls")),
-        open = b.getAttribute("aria-expanded") !== "true",
-        label = c("span", b) || b,
-        sec = b.closest("section");
-      if (!t) return;
-      (b.setAttribute("aria-expanded", String(open)), (t.hidden = !open), (label.textContent = open ? b.dataset.less : b.dataset.label), sec && sec.classList.toggle("is-open", open));
-      // beim Einklappen bleibt der Knopf im Blick
-      open || b.scrollIntoView({ block: "center" });
+// Kundenstimmen: Themen (wie viele Stimmen nennen sie?) und je eine Stimme groß. Gezählt wird aus den Texten selbst.
+function voicesInit() {
+  v("[data-voices]").forEach((sec) => {
+    let items = v(".vq", sec),
+      stage = c(".voices-stage", sec),
+      now = c("[data-vq-now]", sec),
+      total = c("[data-vq-total]", sec);
+    if (!items.length || !stage) return;
+    let L = "[\\p{L}\\u00AD]*",
+      // Wortstämme; weiche Trennstellen im Text dürfen mitten im Wort stehen
+      rx = (stems) => new RegExp(L + "(?:" + stems.map((w) => [...w].join("\\u00AD?")).join("|") + ")" + L, "giu"),
+      TOPICS = {
+        freundlich: rx(["freundlich", "nett", "sympath", "hilfsbereit", "zuvorkommend", "aufmerksam", "herzlich"]),
+        beratung: rx(["berat", "kompeten"]),
+        service: rx(["service", "abwicklung", "bestell", "betreuung"]),
+        auswahl: rx(["auswahl", "sortiment", "schmuck", "uhren"]),
+        preise: rx(["preis", "angebot"]),
+      },
+      quotes = items.map((li) => c("blockquote", li)),
+      raw = quotes.map((q) => q.innerHTML),
+      has = (k, i) => {
+        let r = TOPICS[k];
+        return !r || ((r.lastIndex = 0), r.test(raw[i]));
+      },
+      topic = "alle",
+      pool = items.map((_, i) => i),
+      pos = 0,
+      show = (dir) => {
+        let i = pool[pos],
+          r = TOPICS[topic];
+        (items.forEach((li, n) => n !== i && li.classList.remove("is-on")),
+          r && (r.lastIndex = 0),
+          (quotes[i].innerHTML = r ? raw[i].replace(r, (m) => `<mark>${m}</mark>`) : raw[i]),
+          items[i].style.setProperty("--dir", dir),
+          items[i].classList.remove("is-on"),
+          void items[i].offsetWidth,
+          items[i].classList.add("is-on"),
+          now && (now.textContent = pos + 1),
+          total && (total.textContent = pool.length));
+      },
+      step = (d) => {
+        ((pos = (pos + d + pool.length) % pool.length), show(d));
+      };
+    v("[data-topic]", sec).forEach((b) => {
+      let k = b.dataset.topic,
+        n = items.filter((_, i) => has(k, i)).length,
+        num = c(".vt-num", b);
+      (num && (num.textContent = n),
+        b.style.setProperty("--share", (n / items.length).toFixed(3)),
+        b.setAttribute("aria-label", `${c(".vt-label", b).textContent}: ${n} von ${items.length} Stimmen`),
+        (b.hidden = !n),
+        b.addEventListener("click", () => {
+          if (k === topic) return;
+          ((topic = k),
+            v("[data-topic]", sec).forEach((o) => o.setAttribute("aria-pressed", String(o === b))),
+            (pool = items.map((_, i) => i).filter((i) => has(k, i))),
+            (pos = 0),
+            show(1));
+        }));
+    });
+    (c("[data-vq-prev]", sec)?.addEventListener("click", () => step(-1)), c("[data-vq-next]", sec)?.addEventListener("click", () => step(1)));
+    // am Handy: seitlich wischen blättert
+    let sx = 0,
+      sy = 0,
+      id = null;
+    (stage.addEventListener("pointerdown", (ev) => {
+      ev.pointerType === "touch" && !ev.target.closest("button") && ((id = ev.pointerId), (sx = ev.clientX), (sy = ev.clientY));
     }),
-  );
+      stage.addEventListener("pointerup", (ev) => {
+        if (ev.pointerId !== id) return;
+        id = null;
+        let dx = ev.clientX - sx,
+          dy = ev.clientY - sy;
+        Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.4 && step(dx < 0 ? 1 : -1);
+      }),
+      stage.addEventListener("pointercancel", () => (id = null)));
+    show(1);
+  });
 }
 var ne = "rubin-embeds-ok";
 function ct() {
@@ -2379,7 +2443,7 @@ function ut() {
   };
   document.readyState === "complete" ? d() : window.addEventListener("load", d, { once: !0 });
 }
-var ft = [Le, xe, $e, Te, Ve, ut, Fe, Me, Se, Ae, Ie, Re, Ue, ze, Be, Ne, He, Je, Ke, Ze, ct, dt, nt, at, lt, moreToggles];
+var ft = [Le, xe, $e, Te, Ve, ut, Fe, Me, Se, Ae, Ie, Re, Ue, ze, Be, Ne, He, Je, Ke, Ze, ct, dt, nt, at, lt, voicesInit];
 ft.forEach((e) => {
   try {
     e();

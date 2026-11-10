@@ -8872,40 +8872,305 @@ legend[tabindex="-1"]:focus {
   }
 }
 
-/* ---------- Kundenstimmen: ruhiges Raster statt Laufband, jede Stimme nur einmal ---------- */
-.voice-grid {
-  columns: 3 19rem;
-  column-gap: 16px;
+/* ---------- Kundenstimmen: wofür wir gelobt werden (Themen mit Anteil) und je eine Stimme groß ---------- */
+.voices-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1.8rem, 1.4rem + 2vw, 3.2rem);
 }
-.voice-grid > li {
-  break-inside: avoid;
-  margin-bottom: 16px;
+.voices .voices-head {
+  margin-bottom: 0;
 }
-.voice-grid .voice {
-  width: auto;
+.voices-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.3rem;
 }
-.voice-grid[hidden] {
-  display: none;
+.voices-body > * {
+  min-width: 0;
 }
-.voices-more {
+.voices-label {
+  margin-bottom: 0.9rem;
+  font: 600 var(--label)/1.2 var(--sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.vt-list {
   display: flex;
-  justify-content: center;
-  margin-top: 0.6rem;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-html:not(.js) .voice-grid[hidden] {
-  display: block;
+.vt-list button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: 500 0.95rem/1.2 var(--sans);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s;
 }
-html:not(.js) .voices-more {
+.vt-num {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  transition: color 0.2s;
+}
+.vt-bar {
   display: none;
 }
-@media (max-width: 699px) {
-  .voice-grid.is-lead > li:nth-child(n + 4) {
+.vt-list button[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--white);
+}
+.vt-list button[aria-pressed="true"] .vt-num {
+  color: inherit;
+  opacity: 0.75;
+}
+.voices-stage {
+  display: grid;
+  align-content: start;
+  gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+  min-height: 17rem;
+  padding: clamp(1.3rem, 1rem + 1.6vw, 2.6rem);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  touch-action: pan-y;
+}
+.voices-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: clamp(0.9rem, 0.8rem + 0.5vw, 1.3rem);
+  border-bottom: 1px solid var(--line);
+}
+.voices-count {
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.voices-count b {
+  font-weight: 600;
+  color: var(--ink);
+}
+.voices-arrows {
+  display: flex;
+  gap: 8px;
+}
+.voices-arrows button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    color 0.2s,
+    scale 0.16s var(--ease-out);
+}
+.voices-arrows button:active {
+  scale: 0.94;
+}
+.voices-arrows svg {
+  width: 18px;
+  height: 18px;
+}
+.vq-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vq figure {
+  display: grid;
+  gap: clamp(1.1rem, 0.9rem + 0.8vw, 1.7rem);
+  margin: 0;
+}
+.vq blockquote {
+  margin: 0;
+  font: 500 clamp(1.28rem, 1.1rem + 0.9vw, 1.95rem)/1.32 var(--head);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+.vq blockquote:before {
+  content: "\201e";
+  color: var(--ruby);
+}
+.vq blockquote:after {
+  content: "\201c";
+  color: var(--ruby);
+}
+.vq mark {
+  background: none;
+  color: var(--ruby);
+}
+.vq figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+}
+.vq-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+.vq-src {
+  font-size: 0.86rem;
+  color: var(--ink-2);
+}
+.js [data-voices] .vq {
+  display: none;
+}
+.js [data-voices] .vq.is-on {
+  display: block;
+  animation: vq-in 0.32s var(--ease-out) both;
+}
+@keyframes vq-in {
+  0% {
+    opacity: 0;
+    transform: translateX(calc(var(--dir, 1) * 14px));
+  }
+}
+html:not(.js) .voices-topics,
+html:not(.js) .voices-nav {
+  display: none;
+}
+html:not(.js) .vq + .vq {
+  margin-top: 1.6rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--line);
+}
+@media (prefers-reduced-motion: reduce) {
+  .js [data-voices] .vq.is-on {
+    animation: none;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .vt-list button:not([aria-pressed="true"]):hover {
+    border-color: var(--ink);
+  }
+  .voices-arrows button:hover {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--white);
+  }
+}
+@media (min-width: 900px) {
+  .voices-body {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+    gap: clamp(2rem, 5vw, 5.5rem);
+    align-items: stretch;
+  }
+  .voices-stage {
+    min-height: 0;
+  }
+  /* Themen als Liste mit Balken: wie viele der Stimmen das Thema nennen */
+  .vt-list {
+    display: grid;
+    gap: 0;
+  }
+  .vt-list button,
+  .vt-list button[aria-pressed="true"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.65rem 1rem;
+    min-height: 0;
+    padding: 1rem 0 1.05rem;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    background: none;
+    color: var(--ink-2);
+    font-size: 1.12rem;
+    text-align: left;
+  }
+  .vt-list button:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+  .vt-list button[aria-pressed="true"] {
+    color: var(--ink);
+  }
+  .vt-list button[aria-pressed="true"] .vt-label {
+    font-weight: 600;
+  }
+  .vt-list button[aria-pressed="true"] .vt-num {
+    color: var(--ruby);
+    opacity: 1;
+  }
+  .vt-bar {
+    position: relative;
+    display: block;
+    grid-column: 1 / -1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .vt-bar:after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--share, 0) * 100%);
+    border-radius: 2px;
+    background: var(--ink-2);
+    opacity: 0.55;
+    transition:
+      background-color 0.25s,
+      opacity 0.25s;
+  }
+  .vt-list button[aria-pressed="true"] .vt-bar:after {
+    background: var(--ruby);
+    opacity: 1;
+  }
+}
+@media (hover: hover) and (pointer: fine) and (min-width: 900px) {
+  .vt-list button:not([aria-pressed="true"]):hover {
+    color: var(--ink);
+  }
+}
+@media (max-width: 899px) {
+  /* am Handy stehen die Themen in einer Zeile zum Wischen, damit die Stimme gleich darunter sichtbar ist */
+  .vt-list {
+    flex-wrap: nowrap;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .vt-list::-webkit-scrollbar {
     display: none;
   }
-  .voices.is-open .voice-grid.is-lead > li {
-    display: block;
+  .vt-list button {
+    flex: none;
+    scroll-snap-align: start;
+    scroll-margin-left: var(--gutter);
+    white-space: nowrap;
   }
-  .voice-grid > li {
-    margin-bottom: 10px;
+  .voices-stage {
+    min-height: 15rem;
   }
 }
