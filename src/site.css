@@ -1813,6 +1813,13 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
     gap: 0.1rem;
   }
 }
+@media (min-width: 600px) and (orientation: portrait) {
+  .hero-shade {
+    background:
+      linear-gradient(180deg, rgba(14, 11, 11, 0.62) 0, rgba(14, 11, 11, 0) 8.5rem),
+      linear-gradient(0deg, var(--velvet) 0, var(--velvet) 15rem, rgba(14, 11, 11, 0.93) 27rem, rgba(14, 11, 11, 0.8) 37rem, rgba(14, 11, 11, 0.5) 45rem, rgba(14, 11, 11, 0) 54rem);
+  }
+}
 @media (min-width: 720px) {
   .status-line {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1875,6 +1882,15 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
     display: none;
   }
 }
+@media (min-width: 960px) and (max-width: 1199px) and (min-height: 561px) {
+  .hero-side {
+    width: 19rem;
+    padding: 0.95rem 1.05rem 0.6rem;
+  }
+  .hpanel p {
+    font-size: 0.92rem;
+  }
+}
 
 /* Handy quer: Wortliste links, rechts unten Verweis und Termin */
 @media (orientation: landscape) and (max-height: 560px) {
@@ -1897,24 +1913,16 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
       linear-gradient(0deg, rgba(14, 11, 11, 0.85) 0, rgba(14, 11, 11, 0) 40%);
   }
   .hero-inner {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 17.5rem);
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
+      "list ."
       "list side"
       "list actions";
-    grid-template-rows: 1fr auto;
-    gap: 0.6rem 1.5rem;
+    grid-template-rows: 1fr auto auto;
+    gap: 0.5rem 1.5rem;
     min-height: 0;
     padding-top: calc(var(--header-h) + 0.6rem);
     padding-bottom: 0.9rem;
-  }
-  .hero-side {
-    padding: 0.7rem 0.9rem 0.3rem;
-    background: rgba(14, 11, 11, 0.88);
-    border: 1px solid var(--line-dark);
-    border-radius: 3px;
-  }
-  .hero-meta {
-    justify-content: space-between;
   }
   .hero h1.eyebrow {
     position: absolute;
@@ -1928,15 +1936,27 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
     grid-area: list;
     align-self: end;
   }
+  /* Zähler und Verweise in einer Zeile unten rechts, darunter der Termin – das Motiv bleibt frei */
   .hero-side {
     grid-area: side;
-    align-self: end;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    max-width: none;
   }
-  .hpanel > p:first-child {
+  .hpanel > p:first-child,
+  .hero .hero-rating {
     display: none;
+  }
+  .hpanel-links {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    white-space: nowrap;
   }
   .hero-actions {
     grid-area: actions;
+    justify-content: flex-end;
   }
   .hero .btn {
     min-height: 44px;

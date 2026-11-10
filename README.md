@@ -45,11 +45,10 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
 - Fünf Szenen im Vollbild (Trauringe, Schmuck, Uhren, Goldankauf, Werkstatt). Die große Wortliste schaltet sie um
   (Zeiger darüber, Tippen, Pfeiltasten, seitliches Wischen); ohne Zutun wechselt die Szene alle 6,5 s. Pause-Knopf
   neben dem Zähler. Bei „Weniger Bewegung“ oder Datensparmodus kein selbstständiger Wechsel.
-- Bilder: `assets/img/hero-<szene>-l-<breite>` (quer, 16:9) und `-p-<breite>` (hoch, 9:16), je avif und webp.
-  Erzeugt von `src/hero/heroimg.py`. Neues Bild einsetzen: Datei als `<szene>-l.png` bzw. `<szene>-p.png` in
-  `src/hero/` legen, Skript starten, bauen. Motiv quer: rechte Bildhälfte, links dunkel. Motiv hoch: oberes Drittel,
-  untere Hälfte dunkel.
-- Die Szenenbilder sind derzeit vorläufig (aus dem vorhandenen Bestand zugeschnitten).
+- Bilder: `assets/img/hero-<szene>-l-<breite>` (quer, 16:9) und `-p-<breite>` (hoch, 9:19,5), je avif und webp.
+  Vorlagen liegen in `src/hero/<szene>-l.jpg` (quer, Motiv rechts, links dunkel). `python3 src/hero/heroimg.py`
+  erzeugt daraus alle Größen und schneidet die Hochkant-Fassung selbst zu (Ausschnitt je Szene steht im Skript);
+  eine eigene Hochkant-Vorlage `<szene>-p.jpg` hat Vorrang.
 - Der Wechsel besteht nur aus Verschiebungen (kein 3D, kein Video). Ohne Grafikbeschleunigung: weiche Überblendung.
 
 ## Rechenlast
