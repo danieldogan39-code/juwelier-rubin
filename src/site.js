@@ -377,7 +377,7 @@ function De(e) {
 }
 function Fe() {
   (v("[data-split]").forEach(De), v("[data-stagger]").forEach((t) => [...t.children].forEach((n, s) => n.style.setProperty("--i", Math.min(s, 10)))));
-  let e = v("[data-reveal], [data-stagger], [data-seals], [data-split]:not([data-reveal] [data-split]), .footer-stores, .hero-map, .voices-score");
+  let e = v("[data-reveal], [data-stagger], [data-seals], [data-split]:not([data-reveal] [data-split]), .hero-map, .voices-score");
   if (!e.length) return;
   if (!("IntersectionObserver" in window) || $) {
     e.forEach((t) => t.classList.add("is-in"));

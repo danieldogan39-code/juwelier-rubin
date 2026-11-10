@@ -9,22 +9,27 @@
   "leinwand": [
    750,
    750
-  ]
+  ],
+  "spiegelung": true
  },
  {
   "bild": "r-solo",
   "zustand": {
    "mode": "single",
+   "stand": true,
+   "metal": "gelbgold-585",
+   "width": 4,
+   "thickness": 1.8,
    "stones": "eins",
-   "engraving": "Anna & Ben 12.06.2027",
-   "width": 4.6,
-   "thickness": 1.9
+   "size": 54,
+   "engraving": ""
   },
-  "ansicht_drehung_neigung_zoom": "0.35,0.18,1",
+  "ansicht_drehung_neigung_zoom": "0.35,0.2,1",
   "leinwand": [
    700,
    700
-  ]
+  ],
+  "spiegelung": true
  },
  {
   "bild": "r-engraving",

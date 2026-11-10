@@ -22,6 +22,20 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
   Totalreflexion, Farbzerlegung über drei Brechungsindizes).
 - Aufliegende Szenen (Ringpaar, Ringreihe, Ohrstecker, loser Stein) werden aus Berührung und Schwerpunkt berechnet,
   nichts durchdringt sich.
+- Steine sitzen in echten Sitzen: runde Bohrung mit polierter Fase (1, 3, 5 Brillanten) oder gefräster Kanal mit
+  Körnern (Memoire). Die Steingröße richtet sich nach Breite und Höhe der Schiene, kein Stein ragt innen durch.
+- Legierungen 333, 585, 750 und Platin 950 mit eigener Farbe und Dichte; `ringSpecs()` rechnet daraus Gewicht,
+  Karat und Maße (Anzeige im Ring-Studio).
+- Die Fläche unter dem Ring spiegelt wie schwarzes Glas (Fresnel, n = 1,5) – Startseite, Baukasten und Ring-Studio.
+
+## Ring-Studio und Baukasten
+
+- `ring-studio.html`: zwei Ringe (Ring 1, Ring 2, Paaransicht), Legierung, Profil, Breite, Höhe, Oberfläche, Steine,
+  Gravur in drei Schriften, echte Ringgröße, Querschnitt mit Maßen, Link zum Teilen. Die Auswahl liegt im Browser
+  unter `rubin-studio-cfg` und geht mit „Termin anfragen“ ins Kontaktformular.
+- Startseite: Abschnitt „Fünf Entscheidungen, ein Ring“ nutzt dieselbe Auswahl (Ring 1). Kein an das Scrollen
+  gekoppelter Ablauf mehr.
+- Schrift: Überschriften und Text in Instrument Sans. Fraunces wird nur noch für die Gravur auf dem Ring geladen.
 - Die Standbilder `assets/img/r-*.avif/.webp` sind Aufnahmen aus demselben Modul. Wer am Modul etwas ändert,
   sollte sie neu aufnehmen. Zustand und Ansicht jedes Bildes stehen in `src/ring/standbilder.json`.
 - Das Logo-Intro der Startseite ist `assets/brand/rubin-intro.svg` (zeichnet das Logo aus seinen Bauteilen).
