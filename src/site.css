@@ -8776,3 +8776,136 @@ h3[tabindex="-1"]:focus,
 legend[tabindex="-1"]:focus {
   outline: none;
 }
+
+/* ---------- Werkstatt und Service: drei geordnete Karten ---------- */
+.svc-grid {
+  display: grid;
+  gap: 12px;
+}
+.svc {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+  min-width: 0;
+  padding: clamp(1.3rem, 1.1rem + 1vw, 2rem);
+  background: rgba(244, 238, 231, 0.035);
+  border: 1px solid var(--line-dark);
+  border-radius: 3px;
+}
+.svc-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.svc-ico {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(216, 192, 146, 0.45);
+  border-radius: 50%;
+  color: var(--champagne);
+}
+.svc-ico svg {
+  width: 22px;
+  height: 22px;
+}
+.svc-head h3 {
+  font: 600 1.35rem/1.2 var(--sans);
+  letter-spacing: -0.02em;
+  color: var(--pearl);
+}
+.svc-head p {
+  margin-top: 0.2rem;
+  font-size: 0.94rem;
+  color: var(--mist);
+}
+.svc-list {
+  display: grid;
+  gap: 0.1rem 2rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line-dark);
+}
+.svc-list li {
+  position: relative;
+  padding: 0.42rem 0 0.42rem 1.3rem;
+  font-size: 1.04rem;
+  line-height: 1.35;
+  color: var(--pearl);
+}
+.svc-list li:before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.95em;
+  width: 6px;
+  height: 6px;
+  background: var(--ruby-glow);
+  rotate: 45deg;
+}
+.svc .tlink {
+  align-self: flex-start;
+  margin-top: auto;
+  color: var(--pearl);
+}
+@media (min-width: 560px) {
+  .svc-wide .svc-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 700px) {
+  .svc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .svc-wide {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 1040px) {
+  .svc-grid {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .svc-wide {
+    grid-column: auto;
+  }
+}
+
+/* ---------- Kundenstimmen: ruhiges Raster statt Laufband, jede Stimme nur einmal ---------- */
+.voice-grid {
+  columns: 3 19rem;
+  column-gap: 16px;
+}
+.voice-grid > li {
+  break-inside: avoid;
+  margin-bottom: 16px;
+}
+.voice-grid .voice {
+  width: auto;
+}
+.voice-grid[hidden] {
+  display: none;
+}
+.voices-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.6rem;
+}
+html:not(.js) .voice-grid[hidden] {
+  display: block;
+}
+html:not(.js) .voices-more {
+  display: none;
+}
+@media (max-width: 699px) {
+  .voice-grid.is-lead > li:nth-child(n + 4) {
+    display: none;
+  }
+  .voices.is-open .voice-grid.is-lead > li {
+    display: block;
+  }
+  .voice-grid > li {
+    margin-bottom: 10px;
+  }
+}

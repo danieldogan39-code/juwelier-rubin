@@ -1605,18 +1605,26 @@ function nt() {
         }),
         fx.appendChild(d));
       // jedes neue Videobild einmal zeichnen – nicht öfter
-      let on = (now, meta) => {
-        ((d._t = meta ? meta.mediaTime : d.currentTime), (d._fresh = !0), (d === cur || d === next) && paint(), d.requestVideoFrameCallback(on));
-      };
-      if (d.requestVideoFrameCallback) d.requestVideoFrameCallback(on);
-      else {
-        let last = -1,
-          loop = () => {
-            (mode !== "live" && inView && !document.hidden && d.readyState >= 2 && d.currentTime !== last && ((last = d._t = d.currentTime), (d._fresh = !0), (d === cur || d === next) && paint()),
-              requestAnimationFrame(loop));
-          };
-        loop();
-      }
+      let fresh = (t) => {
+          ((d._t = t), (d._fresh = !0), (d === cur || d === next) && paint());
+        },
+        poll = () => {
+          if (d._poll) return;
+          d._poll = !0;
+          let last = -1,
+            loop = () => {
+              (mode !== "live" && inView && !document.hidden && d.readyState >= 2 && d.currentTime !== last && ((last = d.currentTime), fresh(last)), requestAnimationFrame(loop));
+            };
+          loop();
+        };
+      if (d.requestVideoFrameCallback) {
+        let on = (now, meta) => {
+          (d._poll || fresh(meta ? meta.mediaTime : d.currentTime), d.requestVideoFrameCallback(on));
+        };
+        (d.requestVideoFrameCallback(on),
+          // meldet ein Browser trotz laufendem Video keine Bilder, wird stattdessen im Bildtakt nachgesehen
+          d.addEventListener("playing", () => setTimeout(() => d._fresh || d.paused || poll(), 1500), { once: !0 }));
+      } else poll();
       return (vids[m] = d);
     },
     play = (d) => {
@@ -2231,6 +2239,21 @@ function lt() {
     }
   })();
 }
+// „Mehr anzeigen“: blendet einen Bereich ein und wieder aus
+function moreToggles() {
+  v("[data-more]").forEach((b) =>
+    b.addEventListener("click", () => {
+      let t = document.getElementById(b.getAttribute("aria-controls")),
+        open = b.getAttribute("aria-expanded") !== "true",
+        label = c("span", b) || b,
+        sec = b.closest("section");
+      if (!t) return;
+      (b.setAttribute("aria-expanded", String(open)), (t.hidden = !open), (label.textContent = open ? b.dataset.less : b.dataset.label), sec && sec.classList.toggle("is-open", open));
+      // beim Einklappen bleibt der Knopf im Blick
+      open || b.scrollIntoView({ block: "center" });
+    }),
+  );
+}
 var ne = "rubin-embeds-ok";
 function ct() {
   let e = v("[data-embed]");
@@ -2330,7 +2353,7 @@ function ut() {
   };
   document.readyState === "complete" ? d() : window.addEventListener("load", d, { once: !0 });
 }
-var ft = [Le, xe, $e, Te, Ve, ut, Fe, Me, Se, Ae, Ie, Re, Ue, ze, Be, Ne, He, Je, Ke, Ze, ct, dt, nt, at, lt];
+var ft = [Le, xe, $e, Te, Ve, ut, Fe, Me, Se, Ae, Ie, Re, Ue, ze, Be, Ne, He, Je, Ke, Ze, ct, dt, nt, at, lt, moreToggles];
 ft.forEach((e) => {
   try {
     e();
