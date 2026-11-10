@@ -42,9 +42,10 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
 
 ## Startseite: erster Bildschirm
 
-- Fünf Szenen im Vollbild (Trauringe, Schmuck, Uhren, Goldankauf, Werkstatt). Die große Wortliste schaltet sie um
-  (Zeiger darüber, Tippen, Pfeiltasten, seitliches Wischen); ohne Zutun wechselt die Szene alle 6,5 s. Pause-Knopf
-  neben dem Zähler. Bei „Weniger Bewegung“ oder Datensparmodus kein selbstständiger Wechsel.
+- Fünf Szenen im Vollbild (Trauringe, Schmuck, Uhren, Goldankauf, Werkstatt), je ein großes Wort, darunter Termin
+  und „Ansehen“. Fünf feine Linien am unteren Bildrand wählen die Szene (Zeiger darüber, Tippen, Pfeiltasten,
+  seitliches Wischen); ohne Zutun wechselt sie alle 6,5 s. Pause-Knopf rechts neben den Linien. Bei „Weniger
+  Bewegung“ oder Datensparmodus kein selbstständiger Wechsel. Filialen und Öffnungsstatus stehen direkt unter dem Bild.
 - Bilder: `assets/img/hero-<szene>-l-<breite>` (quer, 16:9) und `-p-<breite>` (hoch, 9:19,5), je avif und webp.
   Vorlagen liegen in `src/hero/<szene>-l.jpg` (quer, Motiv rechts, links dunkel). `python3 src/hero/heroimg.py`
   erzeugt daraus alle Größen und schneidet die Hochkant-Fassung selbst zu (Ausschnitt je Szene steht im Skript);

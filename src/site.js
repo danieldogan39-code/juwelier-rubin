@@ -1850,15 +1850,16 @@ function lt() {
   })();
 }
 // Kundenstimmen: Themen (wie viele Stimmen nennen sie?) und je eine Stimme groß. Gezählt wird aus den Texten selbst.
-// Hero der Startseite: fünf Szenen im Vollbild. Die Wortliste schaltet sie um (Zeiger darüber, Tippen, Pfeiltasten,
-// seitliches Wischen); ohne Zutun wechselt die Szene von selbst. Bilder der weiteren Szenen laden erst nach dem ersten.
+// Hero der Startseite: fünf Szenen im Vollbild, je ein großes Wort. Die Linien am unteren Rand schalten um (Zeiger
+// darüber, Tippen, Pfeiltasten, seitliches Wischen); ohne Zutun wechselt die Szene von selbst. Bilder der weiteren
+// Szenen laden erst nach dem ersten.
 function heroInit() {
   let hero = c("[data-hero]");
   if (!hero) return;
-  let tabs = v(".hline", hero),
+  let tabs = v(".hnav", hero),
     scenes = v(".hscene", hero),
-    panels = v(".hpanel", hero),
-    count = c("[data-hero-count]", hero),
+    words = v(".hword", hero),
+    links = v(".hlink", hero),
     pause = c("[data-hero-pause]", hero),
     n = tabs.length,
     cur = 0,
@@ -1897,12 +1898,10 @@ function heroInit() {
       if (((i = (i + n) % n), i === cur)) return;
       dir = dir || (i > cur ? 1 : -1);
       ((cur = i),
-        tabs.forEach((t, k) => {
-          let on = k === i;
-          (t.classList.toggle("is-on", on), t.setAttribute("aria-selected", on ? "true" : "false"), (t.tabIndex = on ? 0 : -1));
-        }),
-        panels.forEach((p, k) => p.classList.toggle("is-on", k === i)),
-        count && (count.textContent = String(i + 1).padStart(2, "0")));
+        hero.classList.add("is-ready"),
+        tabs.forEach((t, k) => (t.classList.toggle("is-on", k === i), t.setAttribute("aria-pressed", k === i ? "true" : "false"))),
+        words.forEach((w, k) => w.classList.toggle("is-on", k === i)),
+        links.forEach((l, k) => l.classList.toggle("is-on", k === i)));
       let mine = ++token;
       (Promise.race([load(i), new Promise((r) => setTimeout(r, 1600))]).then(() => mine === token && show(i, dir)), saver || load((i + 1) % n));
     },
@@ -1947,7 +1946,7 @@ function heroInit() {
   let inner = c(".hero-inner", hero);
   (pause && ((pause.hidden = !1), pause.addEventListener("click", () => setAuto(!hero.classList.contains("is-auto")))),
     hero.addEventListener("animationend", (e) => e.animationName === "hero-bar" && hero.classList.contains("is-auto") && go(cur + 1, 1)),
-    v(".hline, .hero-side", hero).forEach((el) => {
+    v(".hnav, .hero-links", hero).forEach((el) => {
       (el.addEventListener("pointerenter", (e) => e.pointerType === "mouse" && hero.classList.add("is-hold")), el.addEventListener("pointerleave", () => hero.classList.remove("is-hold")));
     }),
     inner.addEventListener("focusin", () => hero.classList.add("is-hold")),
