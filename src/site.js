@@ -1785,26 +1785,53 @@ function nt() {
   v("[data-metal]", sec).forEach((b) => b.addEventListener("click", () => setMetal(b.dataset.metal)));
 
   // Anfassen: Echtzeit übernimmt. Läuft sie noch nicht, wird sie jetzt gestartet und steigt in die laufende Geste ein.
-  let take = (ev) => {
-    if (mode === "live") return;
-    if (viewer) {
-      goLive(!1);
-      return;
-    }
-    boot().then((l) => {
-      if (!l || mode === "live" || !down) return;
-      (goLive(!1), live.dispatchEvent(new PointerEvent("pointerdown", { pointerId: down.pointerId, pointerType: down.pointerType, isPrimary: !0, clientX: down.x, clientY: down.y, bubbles: !0 })));
-    });
-  };
+  // Finger: erst wenn klar ist, dass seitlich gewischt wird – wer nur die Seite scrollt, weckt die 3D-Ansicht nicht.
+  let take = (synth) => {
+      if (mode === "live") return;
+      let go = () => {
+        (goLive(!1),
+          synth &&
+            down &&
+            live.dispatchEvent(new PointerEvent("pointerdown", { pointerId: down.pointerId, pointerType: down.pointerType, isPrimary: !0, clientX: down.x, clientY: down.y, bubbles: !0 })));
+      };
+      viewer
+        ? go()
+        : boot().then((l) => {
+            l && mode !== "live" && down && ((synth = !0), go());
+          });
+    },
+    warm = !1;
   (e.addEventListener(
     "pointerdown",
     (ev) => {
       if (!ev.isTrusted) return;
-      ((down = { pointerId: ev.pointerId, pointerType: ev.pointerType, x: ev.clientX, y: ev.clientY }), (touched = performance.now()), take(ev));
+      ((down = { pointerId: ev.pointerId, pointerType: ev.pointerType, x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY, wait: !1 }), (touched = performance.now()));
+      if (mode === "live") return;
+      ev.pointerType === "touch" ? ((down.wait = !0), ev.stopPropagation()) : take(!1);
     },
     !0,
   ),
-    e.addEventListener("pointermove", (ev) => down && ev.pointerId === down.pointerId && ((down.x = ev.clientX), (down.y = ev.clientY), (touched = performance.now())), !0),
+    e.addEventListener(
+      "pointermove",
+      (ev) => {
+        if (down && ev.pointerId === down.pointerId) {
+          ((down.x = ev.clientX), (down.y = ev.clientY), (touched = performance.now()));
+          if (down.wait && mode !== "live") {
+            let dx = Math.abs(down.x - down.x0),
+              dy = Math.abs(down.y - down.y0);
+            (ev.stopPropagation(), dx > 7 && dx > dy * 1.3 && ((down.wait = !1), take(!0)));
+          }
+          return;
+        }
+        // Maus ruht über dem Ring: die Echtzeit-Ansicht schon vorbereiten, damit das Ziehen sofort greift
+        if (!warm && can3d && ev.pointerType === "mouse") {
+          let r = fx.getBoundingClientRect(),
+            k = Math.min(r.width, r.height) * 0.36;
+          Math.abs(ev.clientX - (r.left + r.width / 2)) < k && Math.abs(ev.clientY - (r.top + r.height / 2)) < k && ((warm = !0), et(boot, 400));
+        }
+      },
+      !0,
+    ),
     ["pointerup", "pointercancel"].forEach((n) => window.addEventListener(n, (ev) => down && ev.pointerId === down.pointerId && ((down = null), (touched = performance.now())), !0)),
     e.addEventListener(
       "keydown",
@@ -1813,8 +1840,6 @@ function nt() {
       },
       !0,
     ),
-    // Maus über dem Ring: die Echtzeit-Ansicht schon vorbereiten, damit das Ziehen sofort greift
-    e.addEventListener("pointerenter", (ev) => ev.pointerType === "mouse" && can3d && et(boot, 400)),
     setInterval(() => mode === "live" && goTurn(), 250),
     new IntersectionObserver(
       (en) => {
