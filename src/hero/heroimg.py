@@ -26,9 +26,27 @@ a=src('bg-haende-2560'); out['trauringe']=(a, portrait(a.crop((560,0,2000,1440))
 # Schmuck: schwarzer Grund wird nach links fortgesetzt, damit die Steine rechts vom Text liegen
 a=src('bg-diamanten-2560'); L=Image.new('RGB',(2560,1440),(0,0,0)); q=a.crop((1280,0,2560,1024)); L.paste(fit(q,1408,1126),(1152,110))
 c=Image.new('RGB',(1080,1920),(0,0,0)); q=a.crop((1400,0,2480,1024)); c.paste(fit(q,1080,1024),(0,70)); out['schmuck']=(L,c)
-# Uhren: Motiv nach rechts rücken (linker Rand wird fortgesetzt)
-a=src('ph-gshock-1500'); a=fit(a,1920,1440); col=a.crop((0,0,2,1440)).resize((640,1440)); L=Image.new('RGB',(2560,1440)); col=col.resize((900,1440)); L.paste(col,(0,0)); L.paste(a,(900,0))
-b=src('ph-gshock-1500').crop((190,0,1315,1125)); out['uhren']=(L, portrait(b,top=50,f0=0.52,f1=0.78))
+# Uhren: freigestellte Stahl-Chronographen auf dunklem Grund mit warmem Lichtschein und Spiegelung
+def watch_stage(W,H,ww,x,y):
+    import math
+    g=Image.new('L',(64,64),0)
+    for j in range(64):
+        for i in range(64):
+            d=math.hypot((i-32)/32,(j-30)/26); g.putpixel((i,j),int(255*max(0,1-d)**1.6))
+    bg=Image.new('RGB',(W,H),V); glow=Image.new('RGB',(W,H),(92,58,40))
+    m=Image.new('L',(W,H),0); gw=int(ww*1.9); m.paste(g.resize((gw,int(gw*0.8)),Image.BICUBIC),(x+ww//2-gw//2,y-int(gw*0.12)))
+    bg.paste(glow,(0,0),m)
+    w=Image.open(R+'p-uhren-1600.webp').convert('RGBA'); wh=int(ww*w.height/w.width); w=w.resize((ww,wh),Image.LANCZOS)
+    # Spiegelung: gekippt, gestaucht, nach unten ausgeblendet
+    rf=w.transpose(Image.FLIP_TOP_BOTTOM).resize((ww,int(wh*0.5)),Image.LANCZOS).filter(ImageFilter.GaussianBlur(ww/260))
+    fade=Image.new('L',(1,rf.height),0)
+    for j in range(rf.height): fade.putpixel((0,j),int(70*max(0,1-j/(rf.height*0.7))**1.5))
+    al=Image.composite(fade.resize(rf.size),Image.new('L',rf.size,0),rf.getchannel('A')); rf.putalpha(al)
+    floor=y+wh-int(wh*0.035)
+    bg.paste(rf,(x,floor),rf); bg.paste(w,(x,y),w)
+    return bg
+L=watch_stage(2560,1440,1180,1270,150)
+out['uhren']=(L, fade_down(watch_stage(1080,1920,1000,40,150),int(1920*0.6),int(1920*0.82)))
 # Goldankauf
 a=src('gold-2048'); out['goldankauf']=(a.crop((0,106,2048,1258)), portrait(a.crop((340,0,1705,1365)),top=20))
 # Werkstatt (gespiegelt, damit der Text links frei steht) – nur 768 px breit, daher weich
