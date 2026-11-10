@@ -2038,6 +2038,14 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
     border-color 0.4s,
     color 0.4s;
 }
+/* Foto auf weißem Grund: liegt multipliziert über dem Kartenton, so geht der Grund nahtlos in der Karte auf */
+.coll.is-shot .coll-media img {
+  padding: 5% 6% 0;
+  mix-blend-mode: multiply;
+}
+.coll-d.is-shot .coll-media img {
+  padding: 2% 3% 0;
+}
 .coll.is-photo .coll-media {
   position: absolute;
   inset: 0;
