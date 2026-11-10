@@ -16,24 +16,27 @@ def cover(im,ar):
     w,h=im.size; th=round(w*ar)
     if th<h: return im.crop((0,(h-th)//2,w,(h-th)//2+th))
     tw=round(h/ar); return im.crop(((w-tw)//2,0,(w-tw)//2+tw,h))
-def portrait(im,box,W=1080,H=2340,fade=0.42):
-    # box = Ausschnitt (links, oben, rechts, unten) in Anteilen des Querformats
+def portrait(im,box,W=1080,H=2340,fade=0.42,top=0):
+    # box = Ausschnitt (links, oben, rechts, unten) in Anteilen des Querformats; top = Abstand von oben in px
     w,h=im.size; c=im.crop((round(box[0]*w),round(box[1]*h),round(box[2]*w),round(box[3]*h)))
     ih=round(W*c.height/c.width); c=c.resize((W,ih),Image.LANCZOS)
-    out=Image.new('RGB',(W,H),V); out.paste(c,(0,0))
-    y0=round(ih*(1-fade)); g=Image.new('L',(1,H),0)
-    for y in range(H): g.putpixel((0,y),0 if y<y0 else 255 if y>=ih else round(255*((y-y0)/(ih-y0))**1.3))
+    out=Image.new('RGB',(W,H),V); out.paste(c,(0,top))
+    y0=top+round(ih*(1-fade)); y1=top+ih; g=Image.new('L',(1,H),0)
+    for y in range(H):
+        a=0 if y<y0 else 255 if y>=y1 else round(255*((y-y0)/(y1-y0))**1.3)
+        if top and y<top+top: a=max(a,255 if y<top else round(255*(1-(y-top)/top)))   # oben weich ansetzen
+        g.putpixel((0,y),a)
     out.paste(Image.new('RGB',(W,H),V),(0,0),g.resize((W,H)))
     return out
 BOX={
  'trauringe':(0.505,0.18,0.955,1.0),
  'schmuck':(0.525,0.27,0.925,1.0),
- 'uhren':(0.365,0.0,0.995,1.0),
+ 'uhren':(0.455,0.0,0.96,1.0,130),
  'goldankauf':(0.39,0.03,1.0,1.0),
  'werkstatt':(0.48,0.08,0.88,1.0),
 }
 for slug,box in BOX.items():
-    L=find(slug,'l'); P=find(slug,'p') or portrait(L,box)
+    L=find(slug,'l'); P=find(slug,'p') or portrait(L,box[:4],top=box[4] if len(box)>4 else 0)
     for k,im,ws,ar in (('l',L,(1280,1920,2560),9/16),('p',P,(720,1080),13/6)):
         im=cover(im,ar)
         for W in ws:
