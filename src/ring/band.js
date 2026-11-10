@@ -4,15 +4,20 @@ import * as THREE from "three";
 import { METALS, FINISHES, TAU, clamp, rng } from "./data.js";
 
 // Querschnitt als geschlossene Punktfolge (r = Abstand zur Ringachse, y = Lage entlang der Achse).
-export function bandProfile({ innerRadius: ri, width, thickness: t, profile }) {
+// grooves: Lagen feiner Fugen auf der Außenseite (zwischen zwei Legierungen oder zwei Oberflächen).
+// rows: zusätzliche Stützstellen über die Breite (für Steinsitze, die exakt an Stützstellen enden).
+export function bandProfile({ innerRadius: ri, width, thickness: t, profile, grooves = [], rows = [] }) {
   const hw = width / 2;
   const comfort = Math.min(0.22, t * 0.14); // leichte Wölbung innen (Komfortinnenform)
   const edgeT = profile === "bombiert" ? t * 0.58 : profile === "kante" ? t * 0.74 : t;
   const fillet = Math.min(0.34, edgeT * 0.32, hw * 0.3);
   const flat = hw - fillet;
+  const GD = 0.07, GW = 0.085; // Fuge: Tiefe und halbe Breite in mm
   const outerR = (y) => {
     const e = clamp(Math.abs(y) / flat, 0, 1);
-    return profile === "bombiert" ? ri + edgeT + (t - edgeT) * Math.sqrt(Math.max(0, 1 - e * e)) : profile === "kante" ? ri + t - (t - edgeT) * e : ri + t;
+    let r = profile === "bombiert" ? ri + edgeT + (t - edgeT) * Math.sqrt(Math.max(0, 1 - e * e)) : profile === "kante" ? ri + t - (t - edgeT) * e : ri + t;
+    for (const g of grooves) r -= GD * Math.max(0, 1 - Math.abs(y - g) / GW);
+    return r;
   };
   const innerR = (y) => {
     const e = clamp(y / flat, -1, 1);
@@ -38,8 +43,15 @@ export function bandProfile({ innerRadius: ri, width, thickness: t, profile }) {
     return out;
   };
   pts.push(...side(1));
-  for (let i = 0; i <= NO; i++) {
-    const y = flat - 2 * flat * (i / NO);
+  const ys = [];
+  for (let i = 0; i <= NO; i++) ys.push(flat - 2 * flat * (i / NO));
+  for (const g of grooves) for (const k of [-1, -0.5, 0, 0.5, 1]) ys.push(g + k * GW);
+  ys.push(...rows);
+  ys.sort((a, b) => b - a);
+  let prev = Infinity;
+  for (const y of ys) {
+    if (prev - y < 1e-4 || Math.abs(y) > flat) continue;
+    prev = y;
     pts.push({ r: outerR(y), y, part: "outer" });
   }
   pts.push(...side(-1).reverse());
@@ -54,28 +66,49 @@ export function bandProfile({ innerRadius: ri, width, thickness: t, profile }) {
   return { pts, outerR, innerR, hw, edgeT, ri, t, width };
 }
 
+// Volumen des Rotationskörpers in mm³ (Guldinsche Regel: Querschnittsfläche × Weg des Schwerpunkts).
+export function bandVolume(prof) {
+  const p = prof.pts;
+  let s = 0;
+  for (let i = 0; i < p.length; i++) {
+    const a = p[i], b = p[(i + 1) % p.length];
+    s += (a.r + b.r) * (a.r * b.y - b.r * a.y);
+  }
+  return (TAU * Math.abs(s)) / 6;
+}
+
 // Rotationskörper aus einem (Teil-)Querschnitt. u läuft um den Ring, v über den Querschnitt.
-export function lathe(pts, segments = 384) {
+// angles: eigene Winkelteilung (sonst gleichmäßig). seat(a, y, r): senkt die Außenfläche dort ab,
+// wo ein Stein sitzt – die Fläche bekommt einen echten Sitz statt den Stein zu durchdringen.
+export function lathe(pts, { segments = 384, angles = null, seat = null } = {}) {
   const c = pts.length;
+  const A = angles || Array.from({ length: segments + 1 }, (_, s) => (s / segments) * TAU);
+  const n = A.length - 1;
   const len = [0];
   for (let i = 1; i < c; i++) len.push(len[i - 1] + Math.hypot(pts[i].r - pts[i - 1].r, pts[i].y - pts[i - 1].y));
   const total = len[c - 1] || 1;
-  const count = (segments + 1) * c;
+  const count = (n + 1) * c;
   const pos = new Float32Array(count * 3), nor = new Float32Array(count * 3), uv = new Float32Array(count * 2), tan = new Float32Array(count * 4);
-  let o = 0;
-  for (let s = 0; s <= segments; s++) {
-    const u = s / segments, a = u * TAU, ca = Math.cos(a), sa = Math.sin(a);
+  const moved = seat ? new Uint8Array(count) : null;
+  let o = 0, any = false;
+  for (let s = 0; s <= n; s++) {
+    const a = A[s], u = a / TAU, ca = Math.cos(a), sa = Math.sin(a);
     for (let i = 0; i < c; i++, o++) {
       const p = pts[i];
-      pos.set([p.r * ca, p.y, p.r * sa], o * 3);
+      let r = p.r;
+      if (seat && p.part === "outer") {
+        r = seat(a, p.y, p.r);
+        if (r !== p.r) ((moved[o] = 1), (any = true));
+      }
+      pos.set([r * ca, p.y, r * sa], o * 3);
       nor.set([p.nr * ca, p.ny, p.nr * sa], o * 3);
       uv.set([u, len[i] / total], o * 2);
       tan.set([-sa, 0, ca, 1], o * 4);
     }
   }
-  const idx = new Uint32Array(segments * (c - 1) * 6);
+  const idx = new Uint32Array(n * (c - 1) * 6);
   let k = 0;
-  for (let s = 0; s < segments; s++)
+  for (let s = 0; s < n; s++)
     for (let i = 0; i < c - 1; i++) {
       const a = s * c + i, b = (s + 1) * c + i;
       idx.set([a, b, a + 1, b, b + 1, a + 1], k);
@@ -87,6 +120,18 @@ export function lathe(pts, segments = 384) {
   g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
   g.setAttribute("tangent", new THREE.BufferAttribute(tan, 4));
   g.setIndex(new THREE.BufferAttribute(idx, 1));
+  if (any) {
+    // Normalen nur am Sitz neu bestimmen; überall sonst bleiben die exakten Normalen des Querschnitts
+    const exact = nor.slice();
+    g.computeVertexNormals();
+    const out = g.attributes.normal.array;
+    for (let s = 0; s <= n; s++)
+      for (let i = 0; i < c; i++) {
+        const v = s * c + i;
+        const near = moved[v] || (i > 0 && moved[v - 1]) || (i < c - 1 && moved[v + 1]) || (s > 0 && moved[v - c]) || (s < n && moved[v + c]);
+        if (!near) (out[v * 3] = exact[v * 3]), (out[v * 3 + 1] = exact[v * 3 + 1]), (out[v * 3 + 2] = exact[v * 3 + 2]);
+      }
+  }
   return g;
 }
 
@@ -94,6 +139,24 @@ export function lathe(pts, segments = 384) {
 const grainCache = {};
 function grainTexture(kind) {
   if (grainCache[kind]) return grainCache[kind];
+  if (kind === "across") {
+    // Quermatt: die Strichmattierung um 90° gedreht (Karte gestürzt, Neigungsrichtungen getauscht)
+    const src = grainTexture("brushed").image, W = src.height, H = src.width;
+    const data = new Uint8Array(W * H * 4);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const i = (x * src.width + y) * 4, o = (y * W + x) * 4;
+        data.set([src.data[i + 1], src.data[i], src.data[i + 2], 255], o);
+      }
+    const t = new THREE.DataTexture(data, W, H, THREE.RGBAFormat);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.generateMipmaps = true;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.magFilter = THREE.LinearFilter;
+    t.anisotropy = 8;
+    t.needsUpdate = true;
+    return (grainCache[kind] = t);
+  }
   const W = 1024, H = 256;
   const h = new Float32Array(W * H);
   const r = rng(kind === "brushed" ? 7 : 19);
@@ -148,9 +211,14 @@ export function metalMaterial(metal, finishKey, env, { part = "outer", circumfer
   });
   if (f.aniso) {
     mat.anisotropy = f.aniso;
-    mat.anisotropyRotation = Math.PI / 2;
+    mat.anisotropyRotation = f.across ? 0 : Math.PI / 2;
   }
-  if (f.grain) {
+  if (f.grain && f.across) {
+    // Quermatt: die Striche laufen über die Breite des Rings
+    mat.normalMap = grainTexture("across");
+    mat.normalMap.repeat.set(Math.max(8, Math.round(circumference / 2.4)), 1);
+    mat.normalScale = new THREE.Vector2(0.2, 0.2);
+  } else if (f.grain) {
     mat.normalMap = grainTexture(f.grain);
     mat.normalMap.repeat.set(Math.max(2, Math.round(circumference / 9)), 2);
     mat.normalScale = new THREE.Vector2(f.grain === "brushed" ? 0.2 : 0.34, f.grain === "brushed" ? 0.2 : 0.34);
@@ -170,7 +238,8 @@ export function metalColor(metal, part) {
 // ---- Gravur und Stempel: Höhenkarte für die Ringinnenseite ----
 // Die Karte läuft einmal um den Ring (u) und über die Breite (v). Weiß = vertieft.
 export const ENGRAVE_W = 4096, ENGRAVE_H = 256;
-export function engravingCanvas(text, fontFamily, italic, { metal = "gelbgold", size = 54, width = 4.5, canvas } = {}) {
+// script: "kursiv" (Schreibschrift), "klassisch" (Antiqua) oder "modern" (serifenlos)
+export function engravingCanvas(text, fontFamily, italic, { metal = "gelbgold", size = 54, width = 4.5, canvas, script } = {}) {
   const c = canvas || document.createElement("canvas");
   c.width = ENGRAVE_W;
   c.height = ENGRAVE_H;
@@ -189,7 +258,13 @@ export function engravingCanvas(text, fontFamily, italic, { metal = "gelbgold", 
   const cy = c.height / 2 / vScale;
   if (text) {
     const hMm = clamp(width * 0.42, 1.1, 1.9); // Schrifthöhe der Gravur
-    g.font = `${italic ? "italic " : ""}400 ${Math.round(hMm * pxPerMm * 1.25)}px ${fontFamily}`;
+    const kind = script || (italic ? "kursiv" : "klassisch");
+    let px = Math.round(hMm * pxPerMm * (kind === "modern" ? 1.1 : 1.25));
+    const font = (h) => (kind === "modern" ? `500 ${h}px "Instrument Sans", Arial, sans-serif` : `${kind === "kursiv" ? "italic " : ""}400 ${h}px ${fontFamily}`);
+    g.font = font(px);
+    // lange Texte werden kleiner graviert, damit sie auf höchstens 42 % des Umfangs passen
+    const w = g.measureText(text).width, max = c.width * 0.42;
+    if (w > max) g.font = font((px = Math.round((px * max) / w)));
     g.fillText(text, c.width * 0.75, cy);
   }
   // Feingehaltsstempel und Herstellerzeichen, gegenüber der Gravur

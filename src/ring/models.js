@@ -4,8 +4,8 @@
 // stabilen Ruhelage (Schwerpunkt über der Auflagefläche).
 import * as THREE from "three";
 import { ConvexHull } from "three/examples/jsm/math/ConvexHull.js";
-import { METALS, TAU, clamp } from "./data.js";
-import { bandProfile, lathe, metalMaterial, metalColor, applyEngraving } from "./band.js";
+import { METALS, TAU, clamp, rng } from "./data.js";
+import { bandProfile, bandVolume, lathe, metalMaterial, metalColor, applyEngraving } from "./band.js";
 import { brilliant, crownHeightAt, diamondMaterial } from "./brilliant.js";
 
 const V3 = THREE.Vector3;
@@ -67,15 +67,108 @@ function head({ Rs, prongs = 6, mat, stoneMat, lift = 0.9 }) {
   return grp;
 }
 
+const DEFAULTS = { size: 54, width: 4, thickness: 1.8, profile: "bombiert", metal: "gelbgold", metal2: "weissgold", bicolor: false, finish: "poliert", stones: "ohne", stoneSize: 1, upright: true };
+
+function profileOf(o, rows) {
+  const hw = o.width / 2;
+  const grooves = o.bicolor ? [0] : o.finish === "mitte" ? [-hw * 0.32, hw * 0.32] : [];
+  return bandProfile({ innerRadius: o.size / TAU, width: o.width, thickness: o.thickness, profile: o.profile, grooves, rows }); // Ringgröße = Innenumfang in mm
+}
+
+// Lage und Größe der Steine. Ein Stein darf weder breiter sein als die Schiene noch tiefer als ihre Stärke.
+const TOP = 1.5 * Math.PI;
+function stoneLayout(o, prof) {
+  const b = brilliant();
+  const rTop = prof.ri + prof.t;
+  const below = b.depth - b.crownHeight; // Tiefe des Steins unter dem Rundist, bezogen auf den Steinradius
+  // Der Rundist sitzt knapp unter der tiefsten Stelle der Oberfläche rund um den Stein
+  const sinkOf = (Rs) => rTop - prof.outerR(Rs * 0.9) + Rs * 0.1;
+  const fits = (Rs) => {
+    Rs = Math.min(Rs, (o.width - 0.7) / 2.3);
+    for (let i = 0; i < 6 && Rs * below + sinkOf(Rs) > o.thickness - 0.2; i++) Rs *= 0.94;
+    return Rs;
+  };
+  if (o.stones === "solitaer") return { Rs: 2.6 * o.stoneSize, angles: [TOP], rTop, sink: 0 };
+  let Rs = 0, angles = [];
+  const row = (n, base) => {
+    Rs = fits(base * o.stoneSize);
+    const d = (Rs * 2.5) / rTop;
+    for (let i = 0; i < n; i++) angles.push(TOP + (i - (n - 1) / 2) * d);
+  };
+  if (o.stones === "eins") row(1, 0.95);
+  if (o.stones === "drei") row(3, 0.8);
+  if (o.stones === "fuenf") row(5, 0.7);
+  const memoire = o.stones === "memoire";
+  if (memoire) {
+    Rs = fits((clamp(o.width * 0.36, 1.1, 1.8) / 2) * (0.85 + 0.15 * o.stoneSize));
+    const d = (Rs * 2.16) / rTop;
+    const n = Math.floor((Math.PI * 0.95) / d);
+    for (let i = 0; i < n; i++) angles.push(TOP - ((n - 1) / 2) * d + i * d);
+  }
+  return { Rs, angles, memoire, rTop, sink: sinkOf(Rs) };
+}
+
+// Kennwerte eines Rings: Maße, Gewicht (Volumen × Dichte der Legierung) und Steinbesatz.
+// Karat: Ein Brillant im Idealschliff wiegt rund 0,0037 ct × Durchmesser³ (mm).
+export function ringSpecs(cfg) {
+  const o = Object.assign({}, DEFAULTS, cfg);
+  const prof = profileOf(o);
+  const { Rs, angles } = o.stones === "ohne" ? { Rs: 0, angles: [] } : stoneLayout(o, prof);
+  const rho = o.bicolor ? ((METALS[o.metal] || METALS.gelbgold).rho + (METALS[o.metal2] || METALS.weissgold).rho) / 2 : (METALS[o.metal] || METALS.gelbgold).rho;
+  const volume = bandVolume(prof);
+  const d = Rs * 2;
+  return {
+    innerDiameter: (o.size / Math.PI),
+    outerDiameter: 2 * (prof.ri + prof.t),
+    volume,
+    weight: (volume / 1000) * rho,
+    stones: angles.length,
+    stoneDiameter: d,
+    carat: angles.length * 0.0037 * d * d * d,
+    profile: prof,
+  };
+}
+
 // ---------- Ringschiene mit Besatz ----------
 // Lokales System der Schiene: Ringachse = Y. Steine sitzen bei Winkel 270° (zeigt nach dem Aufrichten nach oben).
 export function buildRing(cfg, studio, engraving) {
-  const o = Object.assign(
-    { size: 54, width: 4, thickness: 1.8, profile: "bombiert", metal: "gelbgold", metal2: "weissgold", bicolor: false, finish: "poliert", stones: "ohne", stoneSize: 1, upright: true },
-    cfg,
-  );
-  const ri = o.size / TAU; // Ringgröße = Innenumfang in mm
-  const prof = bandProfile({ innerRadius: ri, width: o.width, thickness: o.thickness, profile: o.profile });
+  const o = Object.assign({}, DEFAULTS, cfg);
+  const ri = o.size / TAU;
+  const set = o.stones !== "ohne" && o.stones !== "solitaer"; // Steine in der Schiene gefasst
+  const layout = o.stones === "ohne" ? null : stoneLayout(o, profileOf(o));
+  const Rs = layout ? layout.Rs : 0;
+
+  // Steinsitz: Für eingeriebene Steine wird ein runder Sitz gebohrt, für die Memoire-Reihe ein Kanal gefräst.
+  // Der Boden liegt knapp unter dem Rundist; Querschnitt und Winkelteilung bekommen dort zusätzliche Stützstellen.
+  let rows = [], angles = null, seat = null, floor = 0;
+  if (set) {
+    const rTop = layout.rTop, A = layout.angles;
+    floor = rTop - layout.sink - Rs * 0.05;
+    const base = Array.from({ length: 385 }, (_, i) => (i / 384) * TAU);
+    if (layout.memoire) {
+      const yw = Rs * 1.04, e = 0.012;
+      const a0 = A[0] - (Rs * 1.22) / rTop, a1 = A[A.length - 1] + (Rs * 1.22) / rTop;
+      rows = [-yw - e, -yw, yw, yw + e];
+      angles = base.concat([a0 - e / rTop, a0, a1, a1 + e / rTop]);
+      seat = (a, y, r) => (Math.abs(y) <= yw + 1e-6 && a >= a0 - 1e-9 && a <= a1 + 1e-9 ? Math.min(r, floor) : r);
+    } else {
+      const hole = Rs * 1.1, pad = Rs * 1.3;
+      for (let y = -pad; y <= pad; y += 0.03) rows.push(y);
+      angles = base.slice();
+      for (const c of A) for (let x = -pad; x <= pad; x += 0.03) angles.push(c + x / rTop);
+      seat = (a, y, r) => {
+        for (const c of A) {
+          const x = (a - c) * rTop;
+          if (x * x + y * y < hole * hole) return Math.min(r, floor);
+        }
+        return r;
+      };
+    }
+    angles.sort((x, y) => x - y);
+    angles = angles.filter((a, i) => i === 0 || a - angles[i - 1] > 1e-5);
+  }
+
+  const prof = profileOf(o, rows);
   const { pts, outerR, hw } = prof;
   const band = new THREE.Group();
   const mats = [];
@@ -104,78 +197,83 @@ export function buildRing(cfg, studio, engraving) {
   if (o.bicolor) parts = split(shell, (p) => (p.y >= 0 ? "a" : "b"));
   else if (o.finish === "mitte") parts = split(shell, (p) => (p.part === "outer" && Math.abs(p.y) < hw * 0.32 ? "s" : "o"));
   else parts = [{ k: "a", pts: shell }];
-  for (const p of parts) band.add(new THREE.Mesh(lathe(p.pts), M(o.bicolor && p.k === "b" ? o.metal2 : o.metal, p.k === "s" ? "stripe" : "outer")));
+  for (const p of parts) band.add(new THREE.Mesh(lathe(p.pts, { angles, seat }), M(o.bicolor && p.k === "b" ? o.metal2 : o.metal, p.k === "s" ? "stripe" : "outer")));
 
   const innerMat = M(o.metal, "inner");
   if (engraving) applyEngraving(innerMat, engraving);
   band.add(new THREE.Mesh(lathe(innerPts), innerMat));
 
-  const top = 1.5 * Math.PI;
-  const rTop = outerR(0);
-  const seat = (METALS[o.metal] || METALS.gelbgold).f0;
+  const rTop = prof.ri + prof.t;
+  const seatColor = (METALS[o.metal] || METALS.gelbgold).f0;
   const b = brilliant();
 
   if (o.stones === "solitaer") {
-    const dir = new V3(Math.cos(top), 0, Math.sin(top));
+    const dir = new V3(Math.cos(TOP), 0, Math.sin(TOP));
     const sm = diamondMaterial(studio.cube, { set: true, seat: (METALS[o.metal2] || METALS[o.metal]).f0 });
     mats.push(sm);
-    const h = head({ Rs: 2.6 * o.stoneSize, prongs: 6, mat: M(o.metal2 || o.metal, "setting"), stoneMat: sm });
+    const h = head({ Rs, prongs: 6, mat: M(o.metal2 || o.metal, "setting"), stoneMat: sm });
     h.quaternion.setFromUnitVectors(Z, dir);
     h.position.copy(dir).multiplyScalar(rTop - 0.18);
     band.add(h);
-  } else if (o.stones !== "ohne") {
-    let Rs = 0;
-    let angles = [];
-    if (o.stones === "eins") ((Rs = 0.95 * o.stoneSize), (angles = [top]));
-    if (o.stones === "drei") {
-      Rs = 0.8 * o.stoneSize;
-      const d = (Rs * 2.5) / rTop;
-      angles = [top - d, top, top + d];
-    }
-    const memoire = o.stones === "memoire";
-    if (memoire) {
-      Rs = clamp(o.width * 0.36, 1.1, 1.8) / 2;
-      const d = (Rs * 2.16) / rTop;
-      const n = Math.floor((Math.PI * 0.95) / d);
-      for (let i = 0; i < n; i++) angles.push(top - ((n - 1) / 2) * d + i * d);
-    }
-    const sm = diamondMaterial(studio.cube, { set: true, seat, bounces: 6 });
+  } else if (set) {
+    const A = layout.angles, memoire = layout.memoire;
+    const sm = diamondMaterial(studio.cube, { set: true, seat: seatColor, bounces: 6 });
     mats.push(sm);
-    const stones = new THREE.InstancedMesh(b.geometry, sm, angles.length);
+    const stones = new THREE.InstancedMesh(b.geometry, sm, A.length);
     const settingMat = M(o.metal, "setting");
-    // eingeriebene Steine bekommen einen polierten Fassungsrand, Memoire-Steine Körner zwischen den Steinen
-    const collars = memoire ? null : new THREE.InstancedMesh(new THREE.TorusGeometry(1.07, 0.085, 14, 72), settingMat, angles.length);
-    const beads = memoire ? new THREE.InstancedMesh(new THREE.SphereGeometry(1, 16, 12), settingMat, (angles.length + 1) * 2) : null;
-    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new V3(), p = new V3();
-    const sink = Rs * 0.1; // Rundist liegt knapp unter der Oberfläche
-    angles.forEach((a, i) => {
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), qs = new THREE.Quaternion(), spin = new THREE.Quaternion(), sc = new V3(), p = new V3();
+    const rGirdle = rTop - layout.sink;
+    const turn = rng(A.length * 31 + 7);
+    A.forEach((a, i) => {
       const dir = new V3(Math.cos(a), 0, Math.sin(a));
       q.setFromUnitVectors(Z, dir);
-      s.setScalar(Rs);
-      p.copy(dir).multiplyScalar(rTop - sink);
-      stones.setMatrixAt(i, m4.compose(p, q, s));
-      if (collars) {
-        p.copy(dir).multiplyScalar(rTop - 0.02);
-        collars.setMatrixAt(i, m4.compose(p, q, s));
-      }
+      // jeder Stein sitzt um seine eigene Achse etwas anders gedreht – wie von Hand gefasst
+      qs.copy(q).multiply(spin.setFromAxisAngle(Z, turn() * TAU));
+      stones.setMatrixAt(i, m4.compose(p.copy(dir).multiplyScalar(rGirdle), qs, sc.setScalar(Rs)));
     });
-    if (beads) {
-      const d = angles[1] - angles[0];
-      const rb = Rs * 0.2, yb = Rs * 0.74;
+    band.add(stones);
+
+    if (memoire) {
+      // Körner: kleine Metallkugeln in den Zwickeln zwischen den Steinen, sie halten die Steine am Rundist
+      const beads = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 20, 14), settingMat, (A.length + 1) * 2);
+      const d = A[1] - A[0];
+      const rb = Rs * 0.33, yb = Rs * 0.76;
       let k = 0;
-      for (let i = 0; i <= angles.length; i++) {
-        const a = angles[0] - d / 2 + i * d;
+      for (let i = 0; i <= A.length; i++) {
+        const a = A[0] - d / 2 + i * d;
         for (const sy of [-1, 1]) {
-          const r = outerR(sy * yb) + rb * 0.25;
-          p.set(Math.cos(a) * r, sy * yb, Math.sin(a) * r);
-          s.setScalar(rb);
-          beads.setMatrixAt(k++, m4.compose(p, q.identity(), s));
+          const r = rGirdle + rb * 0.12;
+          beads.setMatrixAt(k++, m4.compose(p.set(Math.cos(a) * r, sy * yb, Math.sin(a) * r), q.identity(), sc.setScalar(rb)));
         }
       }
       band.add(beads);
+    } else {
+      // Fassungsrand: polierte Fase vom Rundist hinauf zur Oberfläche; ihr oberer Rand folgt der Form der Schiene
+      const N = 96, rIn = Rs * 0.985, rOut = Rs * 1.2;
+      const pos = [], idx = [];
+      A.forEach((c, si) => {
+        for (let j = 0; j <= N; j++) {
+          const f = (j / N) * TAU, cx = Math.cos(f), cy = Math.sin(f);
+          for (const [d, top] of [[rIn, false], [rOut, true]]) {
+            const a = c + (d * cx) / rTop, y = d * cy;
+            const r = top ? outerR(y) + 0.004 : rGirdle + Rs * 0.02;
+            pos.push(Math.cos(a) * r, y, Math.sin(a) * r);
+          }
+        }
+        const o0 = si * (N + 1) * 2;
+        for (let j = 0; j < N; j++) {
+          const v = o0 + j * 2;
+          idx.push(v, v + 1, v + 2, v + 1, v + 3, v + 2);
+        }
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      const bezel = new THREE.Mesh(g, settingMat);
+      settingMat.side = THREE.DoubleSide;
+      band.add(bezel);
     }
-    band.add(stones);
-    if (collars) band.add(collars);
   }
 
   const ring = new THREE.Group();
@@ -318,6 +416,24 @@ function bisect(free, hit, test, n = 26) {
     else free = mid;
   }
   return free;
+}
+
+// Ein Ring steht aufrecht auf der Fläche (Ringachse waagerecht).
+export function standOnGround(ring) {
+  ring.position.y = 0;
+  ring.position.y = -lowestY(body(ring));
+}
+
+// Zwei Ringe stehen nebeneinander, einander leicht zugewandt, mit etwas Abstand.
+export function poseDuo(a, b, gap = 3.2) {
+  const ra = a.userData.prof.ri + a.userData.prof.t, rb = b.userData.prof.ri + b.userData.prof.t;
+  a.rotation.y = 0.3;
+  b.rotation.y = -0.3;
+  const span = ra + rb + gap;
+  a.position.set(-span / 2 + (ra - rb) / 2, 0, 0);
+  b.position.set(span / 2 + (ra - rb) / 2, 0, 1.2);
+  standOnGround(a);
+  standOnGround(b);
 }
 
 // Ringpaar: Der schmale Ring liegt flach. Der breite Ring steht in seiner Öffnung – er ist größer als

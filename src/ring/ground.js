@@ -1,7 +1,34 @@
 // Auflagefläche: Die Stücke liegen auf einer unsichtbaren Fläche. Sichtbar wird sie durch den
 // Kontaktschatten – dort, wo ein Stück aufliegt, ist er dunkel und scharf, mit Abstand zur Fläche
-// wird er heller und weicher.
+// wird er heller und weicher. Auf Wunsch spiegelt die Fläche wie eine schwarze Glasplatte:
+// nach den Fresnel-Formeln für Glas (n = 1,5) – flach betrachtet deutlich, von oben kaum.
 import * as THREE from "three";
+import { Reflector } from "three/examples/jsm/objects/Reflector.js";
+
+const MIRROR = {
+  name: "GroundMirror",
+  uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, uRadius: { value: 30 }, uGain: { value: 1 } },
+  vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vW; varying vec3 vN; varying vec2 vP;
+    void main(){
+      vUv = textureMatrix * vec4(position, 1.0);
+      vec4 w = modelMatrix * vec4(position, 1.0);
+      vW = w.xyz;
+      vN = normalize(mat3(modelMatrix) * vec3(0.0, 0.0, 1.0));
+      vP = position.xy;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uRadius; uniform float uGain;
+    varying vec4 vUv; varying vec3 vW; varying vec3 vN; varying vec2 vP;
+    void main(){
+      vec4 r = texture2DProj(tDiffuse, vUv);
+      float c = clamp(dot(normalize(cameraPosition - vW), vN), 0.0, 1.0);
+      float F = 0.04 + 0.96 * pow(1.0 - c, 5.0);
+      float fade = 1.0 - smoothstep(0.16, 0.82, length(vP) / uRadius);
+      gl_FragColor = vec4(r.rgb, clamp(r.a * F * uGain * fade, 0.0, 1.0));
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+};
 
 const BLUR = {
   uniforms: { tDiffuse: { value: null }, dir: { value: new THREE.Vector2(1, 0) } },
@@ -22,8 +49,17 @@ const BLUR = {
     }`,
 };
 
-export function createGround(renderer, { res = 1024 } = {}) {
+export function createGround(renderer, { res = 1024, reflect = false } = {}) {
   const group = new THREE.Group();
+  let mirror = null;
+  if (reflect) {
+    mirror = new Reflector(new THREE.PlaneGeometry(1, 1), { shader: MIRROR, textureWidth: 512, textureHeight: 512, clipBias: 0.001, multisample: 4 });
+    mirror.material.transparent = true;
+    mirror.material.depthWrite = false;
+    mirror.rotation.x = -Math.PI / 2;
+    mirror.position.y = 0.004;
+    group.add(mirror);
+  }
   const rtA = new THREE.WebGLRenderTarget(res, res, { depthBuffer: true });
   const rtB = new THREE.WebGLRenderTarget(res, res, { depthBuffer: false });
   const rtSoft = new THREE.WebGLRenderTarget(res / 2, res / 2, { depthBuffer: false });
@@ -92,6 +128,11 @@ export function createGround(renderer, { res = 1024 } = {}) {
       cam.updateProjectionMatrix();
       sharp.scale.set(size, -size, 1);
       soft.scale.set(size, -size, 1);
+      if (mirror) {
+        mirror.scale.set(size * 1.5, size * 1.5, 1);
+        mirror.material.uniforms.uRadius.value = 0.5; // in Einheiten der Plattengröße
+        mirror.visible = false;
+      }
       depthMat.uniforms.uHeight.value = height;
       const prevTarget = renderer.getRenderTarget();
       const prevOverride = scene.overrideMaterial, prevBg = scene.background;
@@ -116,11 +157,17 @@ export function createGround(renderer, { res = 1024 } = {}) {
       renderer.setRenderTarget(prevTarget);
       renderer.setClearColor(clear, alpha);
       sharp.visible = soft.visible = true;
+      if (mirror) mirror.visible = true;
+    },
+    // Auflösung der Spiegelung an die Zeichenfläche anpassen
+    resize(w, h) {
+      if (mirror) mirror.getRenderTarget().setSize(Math.max(64, Math.round(w)), Math.max(64, Math.round(h)));
     },
     dispose() {
       rtA.dispose(); rtB.dispose(); rtSoft.dispose();
       depthMat.dispose(); blurMat.dispose(); quadGeo.dispose();
       [sharp, soft].forEach((m) => (m.geometry.dispose(), m.material.dispose()));
+      if (mirror) (mirror.geometry.dispose(), mirror.dispose());
     },
   };
 }

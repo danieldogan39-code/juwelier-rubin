@@ -1455,7 +1455,7 @@ async function de() {
 }
 async function be() {
   try {
-    await document.fonts.load('italic 400 92px "Fraunces"');
+    await Promise.all([document.fonts.load('italic 400 92px "Fraunces"'), document.fonts.load('400 92px "Fraunces"'), document.fonts.load('600 40px "Instrument Sans"')]);
   } catch {}
 }
 var ue = (e) => Math.min(window.devicePixelRatio || 1, e),
@@ -1493,6 +1493,7 @@ function nt() {
           preserve: !0,
           fontFamily: '"Fraunces"',
           restPitch: 0.3,
+          reflect: !0,
           state: { mode: "pair", metal: s || "gelbgold" },
           onReady: () => {
             ($ ? l.setView(0.6, 0.3, 1) : (l.setView(-0.15, 0.52, 0.86), l.frame({ yaw: 0.6, pitch: 0.3, zoom: 1, auto: !0 })), fe(e));
@@ -1510,259 +1511,376 @@ function nt() {
   };
   he(e, () => et(o, 600));
 }
-function at() {
-  let e = c("[data-story]");
-  if (!e) return;
-  let a = v(".story-step", e),
-    t = c(".story-progress i", e),
-    n = v(".story-dots i", e),
-    s = c(".story-bignum", e),
-    i = c('[data-ring="story"]', e),
-    o = a.length,
-    r = a.map((x) => x.dataset.key),
-    d = a.map((x) => x.dataset.values.split("|")),
-    l = 0.07,
-    f = 0.93,
-    h = (f - l) / o,
-    u = {
-      mode: "single",
-      size: 54,
-      width: 4.6,
-      thickness: 1.9,
-      profile: "bombiert",
-      metal: d[0][0],
-      metal2: "weissgold",
-      bicolor: !1,
-      finish: "poliert",
-      stones: "ohne",
-      engraving: "",
-      engravingItalic: !0,
-      tilt: 0.42,
-    },
-    g = {
-      metal: { pitch: 0.24, zoom: 1 },
-      profile: { pitch: 0.04, zoom: 1.14 },
-      finish: { pitch: 0.3, zoom: 1.08 },
-      stones: { pitch: 0.42, zoom: 1.16 },
-      engraving: { yaw: 0, pitch: 0.62, zoom: 1.1, auto: !1 },
-    };
-  e.classList.add("is-live");
-  let b = null,
-    m = "",
-    w = null,
-    k = -1,
-    S = (x) => {
-      let A = { ...u },
-        D = -1,
-        B = 0;
-      if (x >= l) {
-        D = Math.min(o - 1, Math.floor((x - l) / h));
-        let L = z((x - l - D * h) / h, 0, 0.999);
-        B = Math.min(d[D].length - 1, Math.floor(L * d[D].length));
-      }
-      for (let L = 0; L < o; L++) L < D || x >= f ? (A[r[L]] = d[L][d[L].length - 1]) : L === D && (A[r[L]] = d[L][B]);
-      return { st: A, step: x >= f ? o : D };
-    },
-    F = (x) => (x < 0 ? { pitch: 0.2, zoom: 0.94, auto: !0 } : x >= o ? { pitch: 0.3, zoom: 1, auto: !0 } : { auto: !0, ...g[r[x]] }),
-    I = () => {
-      let x = e.getBoundingClientRect(),
-        A = Math.max(1, e.offsetHeight - window.innerHeight),
-        D = z(-x.top / A, 0, 1);
-      t && (t.style.transform = `scaleX(${D.toFixed(4)})`);
-      let { st: B, step: L } = S(D);
-      (e.classList.toggle("past-intro", L >= 0), e.classList.toggle("at-end", L >= o));
-      let p = z(L, 0, o - 1);
-      if (
-        (a.forEach((y, C) => {
-          (y.classList.toggle("is-active", L >= 0 && C === p), y.classList.toggle("is-past", C < L));
-        }),
-        n.forEach((y, C) => y.classList.toggle("is-on", L >= 0 && C === p && L < o)),
-        s && L >= 0 && L < o && L !== k)
-      ) {
-        let y = a[L].querySelector(".step-num")?.firstChild?.textContent?.trim() || String(L + 1).padStart(2, "0");
-        (k < 0 || $
-          ? (s.textContent = y)
-          : (s.classList.add("is-swap"),
-            setTimeout(() => {
-              ((s.textContent = y), s.classList.remove("is-swap"));
-            }, 260)),
-          (k = L));
-      }
-      let E = a[p];
-      if ((v(".step-values li", E).forEach((y) => y.classList.toggle("is-on", y.dataset.v === B[r[p]])), !b)) return;
-      let T = JSON.stringify(B);
-      (T !== m && ((m = T), b.set(B)), L !== w && ((w = L), b.frame(F(L))));
-    };
-  (J(I),
-    !(!i || !ce()) &&
-      he(
-        e,
-        async () => {
-          try {
-            let [{ createRingViewer: x }] = await Promise.all([de(), be()]),
-              A = e.getBoundingClientRect(),
-              { st: D } = S(z(-A.top / Math.max(1, e.offsetHeight - window.innerHeight), 0, 1));
-            ((b = x(c("canvas", i), {
-              mode: "single",
-              autoRotate: !0,
-              interactive: !1,
-              preserve: !0,
-              warm: !0,
-              fontFamily: '"Fraunces"',
-              restPitch: 0.24,
-              state: D,
-              onReady: () => fe(i),
-            })),
-              (m = JSON.stringify(D)),
-              window.addEventListener("pageswap", () => b.renderNow()),
-              I());
-          } catch (x) {
-            console.warn("3D ring unavailable", x);
-          }
-        },
-        "70% 0px",
-      ));
-}
-var st = {
-    gelbgold: "Gelbgold 585",
-    weissgold: "Wei\xDFgold 585",
-    rosegold: "Ros\xE9gold 585",
-    rotgold: "Rotgold 585",
-    platin: "Platin 950",
-    bicolor: "Bicolor Gelb-/Wei\xDFgold 585",
+// ---------- Ring-Studio und Ring-Baukasten ----------
+var ALLOY = { gelbgold: "Gelbgold", weissgold: "Wei\xDFgold", rosegold: "Ros\xE9gold", rotgold: "Rotgold", platin: "Platin", bicolor: "Bicolor Gelb-/Wei\xDFgold" },
+  PROFILE = { flach: "flach", bombiert: "bombiert", kante: "mit Kante" },
+  FINISH = { poliert: "poliert", laengsmatt: "l\xE4ngsmatt", quermatt: "quermatt", eismatt: "eismatt", mitte: "Mitte poliert, Seiten matt" },
+  STONE = { ohne: "ohne Stein", eins: "1 Brillant", drei: "3 Brillanten", fuenf: "5 Brillanten", memoire: "Halbmemoire" },
+  SCRIPT = { kursiv: "Schreibschrift", klassisch: "klassisch", modern: "modern" },
+  GRADE_NOTE = {
+    333: "33,3 % Feingold (8 Karat): g\xFCnstiger, im Ton etwas heller.",
+    585: "58,5 % Feingold (14 Karat): der Klassiker f\xFCr Trauringe.",
+    750: "75 % Feingold (18 Karat): satter Farbton, sp\xFCrbar schwerer.",
+    950: "95 % Platin: von Natur aus wei\xDF, sehr dicht und schwer.",
   },
-  it = { flach: "Flach", bombiert: "Bombiert", kante: "Kante" },
-  ot = { poliert: "Poliert", laengsmatt: "L\xE4ngsmatt", eismatt: "Eismatt", mitte: "Mitte poliert, Seiten matt" },
-  rt = { ohne: "Ohne Stein", eins: "1 Brillant", drei: "3 Brillanten", memoire: "Halbmemoire" };
-function lt() {
-  let e = c("[data-studio]");
+  RING0 = { metal: "gelbgold", grade: "585", profile: "bombiert", width: 4, height: 1.8, finish: "poliert", stones: "eins", stoneSize: 1, engraving: "", script: "kursiv", size: "" },
+  CFG_KEY = "rubin-studio-cfg",
+  de1 = (n, d = 1) => Number(n).toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
+function studioDefaults() {
+  return { v: 2, active: 0, rings: [{ ...RING0 }, { ...RING0, width: 5, stones: "ohne" }] };
+}
+function studioLoad() {
+  let s = null;
+  try {
+    let h = location.hash.match(/[#&]c=([^&]+)/);
+    h && (s = JSON.parse(decodeURIComponent(h[1])));
+  } catch {}
+  s || (s = R.get(CFG_KEY));
+  let d = studioDefaults();
+  if (!s || typeof s != "object") return d;
+  if (s.v !== 2 || !Array.isArray(s.rings)) {
+    // \xE4lteres Format: ein einzelner Ring
+    let one = {};
+    ["metal", "profile", "width", "finish", "stones", "engraving", "script", "size"].forEach((k) => s[k] != null && (one[k] = s[k]));
+    return ((d.rings[0] = { ...RING0, ...one }), d);
+  }
+  let clean = (r, base) => {
+    let o = { ...base };
+    Object.keys(RING0).forEach((k) => r && r[k] != null && typeof r[k] != "object" && (o[k] = r[k]));
+    return (
+      ALLOY[o.metal] || (o.metal = base.metal),
+      PROFILE[o.profile] || (o.profile = base.profile),
+      FINISH[o.finish] || (o.finish = base.finish),
+      STONE[o.stones] || (o.stones = base.stones),
+      SCRIPT[o.script] || (o.script = base.script),
+      ["333", "585", "750"].includes(String(o.grade)) || (o.grade = "585"),
+      (o.grade = String(o.grade)),
+      (o.width = z(+o.width || base.width, 2.5, 8)),
+      (o.height = z(+o.height || base.height, 1.2, 2.6)),
+      (o.stoneSize = z(+o.stoneSize || 1, 0.8, 1.25)),
+      (o.engraving = String(o.engraving || "").slice(0, 30)),
+      (o.size = /^(4[6-9]|[56]\d|7[0-2])$/.test(String(o.size)) ? String(o.size) : ""),
+      o
+    );
+  };
+  return { v: 2, active: s.active === 1 ? 1 : 0, rings: [clean(s.rings[0], d.rings[0]), clean(s.rings[1], d.rings[1])] };
+}
+function ringState(r) {
+  let bi = r.metal === "bicolor",
+    g = r.metal === "platin" ? "" : "-" + r.grade;
+  return {
+    metal: bi ? "gelbgold" + g : r.metal + g,
+    metal2: "weissgold" + g,
+    bicolor: bi,
+    width: +r.width,
+    thickness: +r.height,
+    profile: r.profile,
+    finish: r.finish,
+    stones: r.stones,
+    stoneSize: +r.stoneSize,
+    engraving: r.engraving,
+    engravingScript: r.script,
+    engravingItalic: r.script === "kursiv",
+    size: +r.size || 54,
+  };
+}
+var alloyName = (r) => (r.metal === "platin" ? "Platin 950" : `${ALLOY[r.metal]} ${r.grade}`);
+function ringLines(r, sp) {
+  let stones = STONE[r.stones];
+  r.stones !== "ohne" && sp && (stones += `, je ${de1(sp.stoneDiameter)} mm, zus. ca. ${de1(sp.carat, 2)} ct`);
+  let out = [
+    ["Legierung", alloyName(r)],
+    ["Form", `${PROFILE[r.profile]}, ${de1(r.width)} \xD7 ${de1(r.height)} mm`],
+    ["Oberfl\xE4che", FINISH[r.finish]],
+    ["Steine", stones],
+    ["Gravur", r.engraving ? `„${r.engraving}“ (${SCRIPT[r.script]})` : "keine"],
+    ["Ringgr\xF6\xDFe", r.size ? `${r.size} (\xD8 ${de1(r.size / Math.PI)} mm)` : "noch offen"],
+  ];
+  return (sp && out.push(["Gewicht", `ca. ${de1(sp.weight)} g${r.size ? "" : " bei Gr\xF6\xDFe 54"}`]), out);
+}
+// Querschnitt der Ringschiene als Zeichnung mit Ma\xDFen
+function sectionSvg(sp, r) {
+  let p = sp.profile,
+    ri = p.ri,
+    w = +r.width,
+    t = +r.height,
+    k = 11,
+    cx = 66,
+    x0 = cx - (w / 2) * k,
+    x1 = cx + (w / 2) * k,
+    yb = 34,
+    pt = p.pts.map((q) => `${(cx + q.y * k).toFixed(2)},${(yb - (q.r - ri) * k).toFixed(2)}`).join(" "),
+    yt = yb - t * k;
+  return `<svg viewBox="0 0 120 50" role="img" aria-label="Querschnitt der Ringschiene: ${de1(w)} mm breit, ${de1(t)} mm hoch"><polygon class="sec-body" points="${pt}"/><g class="sec-dim"><path d="M${x0.toFixed(1)} 41H${x1.toFixed(1)}M${x0.toFixed(1)} 38.6v4.8M${x1.toFixed(1)} 38.6v4.8"/><path d="M${(x0 - 5).toFixed(1)} ${yb}V${yt.toFixed(1)}M${(x0 - 7.4).toFixed(1)} ${yb}h4.8M${(x0 - 7.4).toFixed(1)} ${yt.toFixed(1)}h4.8"/></g><text x="${cx}" y="48.6" text-anchor="middle">${de1(w)} mm</text><text x="${(x0 - 9).toFixed(1)}" y="${((yb + yt) / 2 + 1.8).toFixed(1)}" text-anchor="end">${de1(t)} mm</text></svg>`;
+}
+function setRadio(form, name, value) {
+  let n = form.elements[name];
+  if (!n) return;
+  n instanceof RadioNodeList ? [...n].forEach((i) => (i.checked = i.value === String(value))) : (n.value = value);
+}
+function rangeFill(i) {
+  i && i.style.setProperty("--fill", `${((i.value - i.min) / (i.max - i.min)) * 100}%`);
+}
+
+// Startseite: der Ring zum Antippen. Keine Scroll-Steuerung – jede Auswahl wirkt sofort.
+function at() {
+  let e = c("[data-builder]");
   if (!e) return;
-  let a = c("#studio-form", e),
-    t = R.get("rubin-studio-cfg") || {};
-  Object.entries(t).forEach(([u, g]) => {
-    let b = a.elements[u];
-    if (b)
-      if (b instanceof RadioNodeList) {
-        let m = [...b].find((w) => w.value === String(g));
-        m && (m.checked = !0);
-      } else b.value = g;
-  });
-  let n = a.elements.width,
-    s = () => {
-      n && n.style.setProperty("--fill", `${((n.value - n.min) / (n.max - n.min)) * 100}%`);
+  let form = c("form", e),
+    stage = c('[data-ring="story"]', e),
+    cfg = studioLoad(),
+    ring = cfg.rings[0],
+    viewer = null,
+    VIEWS = { metal: "front", profile: "side", finish: "front", stones: "top", engraving: "inside" },
+    fill = () => {
+      (["metal", "profile", "finish", "stones"].forEach((k) => setRadio(form, k, ring[k])), (form.elements.engraving.value = ring.engraving));
     },
-    i = () => {
-      let u = a.elements;
-      return {
-        metal: u.metal.value,
-        width: parseFloat(u.width.value),
-        profile: u.profile.value,
-        finish: u.finish.value,
-        stones: u.stones.value,
-        engraving: u.engraving.value.trim(),
-        engravingItalic: u.script.value === "kursiv",
-        size: u.size.value,
-      };
+    state = () => Object.assign({ mode: "single", stand: !0 }, ringState(ring)),
+    tab = (k) => {
+      ((e.dataset.tab = k),
+        v("[data-tab]", e).forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === k))),
+        v("[data-group]", e).forEach((g) => g.classList.toggle("is-current", g.dataset.group === k)));
     },
-    o = (u) => [
-      ["Metall", st[u.metal]],
-      ["Profil", it[u.profile]],
-      ["Breite", `${u.width.toLocaleString("de-DE", { minimumFractionDigits: 1 })} mm`],
-      ["Oberfl\xE4che", ot[u.finish]],
-      ["Steine", rt[u.stones]],
-      ["Gravur", u.engraving ? `\u201E${u.engraving}\u201C (${u.engravingItalic ? "kursiv" : "klassisch"})` : "keine"],
-      [
-        "Ringgr\xF6\xDFe",
-        u.size ? `${u.size} (\xD8 ${(u.size / Math.PI).toLocaleString("de-DE", { maximumFractionDigits: 1, minimumFractionDigits: 1 })} mm)` : "noch offen",
-      ],
-    ],
-    r = [],
-    d = (u, g) => {
-      let b = c("[data-summary]", e);
-      b.innerHTML = "";
-      let m = o(u);
-      (m.forEach(([k, S], F) => {
-        let I = document.createElement("li");
-        ((I.innerHTML = "<span></span><span></span>"),
-          (I.children[0].textContent = k),
-          (I.children[1].textContent = S),
-          g && r[F] && r[F][1] !== S && I.classList.add("is-changed"),
-          b.appendChild(I));
+    look = (k) => {
+      if (!viewer) return;
+      let name = VIEWS[k];
+      (name === "top" && ring.stones === "ohne" && (name = "front"), name === "inside" && !ring.engraving && (name = "front"), viewer.view(name));
+    };
+  (fill(),
+    tab("metal"),
+    v("[data-tab]", e).forEach((b) =>
+      b.addEventListener("click", () => {
+        (tab(b.dataset.tab), look(b.dataset.tab));
       }),
-        (r = m),
-        (c("[data-width-out]", e).textContent = `${u.width.toLocaleString("de-DE", { minimumFractionDigits: 1 })} mm`));
-      let w = c("[data-size-out]", e);
-      (w && (w.textContent = u.size ? `\xD8 ${(u.size / Math.PI).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mm` : ""),
-        s(),
-        R.set("rubin-studio-cfg", {
-          metal: u.metal,
-          width: u.width,
-          profile: u.profile,
-          finish: u.finish,
-          stones: u.stones,
-          engraving: u.engraving,
-          script: u.engravingItalic ? "kursiv" : "klassisch",
-          size: u.size,
-        }));
-    },
-    l = null,
-    f = (u) => ({
-      metal: u.metal === "bicolor" ? "gelbgold" : u.metal,
-      metal2: "weissgold",
-      bicolor: u.metal === "bicolor",
-      width: u.width,
-      thickness: u.width >= 6 ? 2 : 1.8,
-      profile: u.profile,
-      finish: u.finish,
-      stones: u.stones,
-      engraving: u.engraving,
-      engravingItalic: u.engravingItalic,
-      size: 54,
-    });
-  (a.addEventListener("input", () => {
-    let u = i();
-    (d(u, !0), l && l.set(f(u)));
-  }),
-    a.addEventListener("submit", (u) => {
-      u.preventDefault();
-      let g = i();
-      (R.set(
-        se,
-        {
-          cfg: g,
-          summary: o(g).map(([b, m]) => `${b}: ${m}`).join(`
-`),
-        },
-        "session",
-      ),
-        (location.href = a.action));
-    }),
-    d(i(), !1));
-  let h = c('[data-ring="studio"]', e);
-  ce() &&
-    (async () => {
+    ),
+    form.addEventListener("submit", (ev) => ev.preventDefault()),
+    form.addEventListener("input", (ev) => {
+      let n = ev.target.name;
+      if (!(n in ring)) return;
+      ((ring[n] = n === "engraving" ? ev.target.value.trim().slice(0, 30) : ev.target.value), R.set(CFG_KEY, cfg), viewer && viewer.set(state()), look(n));
+    }));
+  if (!stage || !ce()) {
+    e.classList.add("no-3d");
+    return;
+  }
+  he(
+    e,
+    async () => {
       try {
-        let [{ createRingViewer: u }] = await Promise.all([de(), be()]);
-        ((l = u(c("canvas", h), {
+        let [{ createRingViewer: make }] = await Promise.all([de(), be()]);
+        ((viewer = make(c("canvas", stage), {
           mode: "single",
           autoRotate: !0,
           interactive: !0,
           preserve: !0,
-          warm: !0,
+          reflect: !0,
           fontFamily: '"Fraunces"',
-          state: Object.assign({ mode: "single" }, f(i())),
+          restPitch: 0.2,
+          state: state(),
           onReady: () => {
-            ($ || (l.setView(-0.5, 0.5, 0.86), l.frame({ yaw: 0.35, pitch: 0.18, zoom: 1 })), fe(h));
+            ($ || (viewer.setView(-0.3, 0.42, 0.9), viewer.frame({ yaw: 0.35, pitch: 0.2, zoom: 1 })), fe(stage));
           },
         })),
-          l.setView(0.35, 0.18),
-          window.addEventListener("pageswap", () => l.renderNow()),
-          c("[data-inside]", e)?.addEventListener("click", () => l.showInside()),
-          c("[data-reset]", e)?.addEventListener("click", () => l.reset()));
-      } catch (u) {
-        console.warn("3D ring unavailable", u);
+          viewer.setView(0.35, 0.2),
+          window.addEventListener("pageswap", () => viewer.renderNow()));
+      } catch (x) {
+        (console.warn("3D ring unavailable", x), e.classList.add("no-3d"));
       }
-    })();
+    },
+    "60% 0px",
+  );
+}
+
+function lt() {
+  let e = c("[data-studio]");
+  if (!e) return;
+  let form = c("#studio-form", e),
+    stage = c('[data-ring="studio"]', e),
+    cfg = studioLoad(),
+    viewer = null,
+    mod = null,
+    duo = !1,
+    FIT = 36,
+    ring = () => cfg.rings[cfg.active],
+    specs = (r) => (mod ? mod.ringSpecs(ringState(r)) : null),
+    show = () => {
+      viewer &&
+        (duo
+          ? viewer.set({ mode: "duo", fit: 0, rings: cfg.rings.map(ringState) })
+          : viewer.set(Object.assign({ mode: "single", stand: !0, fit: FIT }, ringState(ring()))));
+    },
+    // Formular mit den Werten des gew\xE4hlten Rings f\xFCllen
+    fill = () => {
+      let r = ring();
+      (["metal", "grade", "profile", "finish", "stones", "script"].forEach((k) => setRadio(form, k, r[k])),
+        setRadio(form, "stoneSize", r.stoneSize),
+        setRadio(form, "which", cfg.active),
+        (form.elements.width.value = r.width),
+        (form.elements.height.value = r.height),
+        (form.elements.engraving.value = r.engraving),
+        (form.elements.size.value = r.size));
+    },
+    last = [[], []],
+    paint = (flash) => {
+      let r = ring(),
+        sp = specs(r),
+        el = form.elements,
+        set = (sel, txt) => {
+          let n = c(sel, e);
+          n && (n.textContent = txt);
+        };
+      (rangeFill(el.width),
+        rangeFill(el.height),
+        set("[data-width-out]", `${de1(r.width)} mm`),
+        set("[data-height-out]", `${de1(r.height)} mm`),
+        set("[data-size-out]", r.size ? `\xD8 innen ${de1(r.size / Math.PI)} mm` : ""),
+        set("[data-count]", `${r.engraving.length} / 30`),
+        set("[data-grade-note]", GRADE_NOTE[r.metal === "platin" ? 950 : r.grade]));
+      let g = c("[data-grade]", e),
+        ss = c("[data-stone-size]", e),
+        so = c("[data-stone-out]", e),
+        fig = c("[data-section]", e),
+        wt = c("[data-weight]", e);
+      (g && (g.hidden = r.metal === "platin"),
+        ss && (ss.hidden = r.stones === "ohne"),
+        so &&
+          (so.textContent =
+            r.stones === "ohne" || !sp
+              ? ""
+              : `${sp.stones} ${sp.stones === 1 ? "Brillant" : "Brillanten"} mit je ${de1(sp.stoneDiameter)} mm Durchmesser, zusammen ca. ${de1(sp.carat, 2)} ct.`),
+        fig && sp && (fig.innerHTML = sectionSvg(sp, r)),
+        wt &&
+          (wt.textContent = sp
+            ? `Au\xDFen \xD8 ${de1(sp.outerDiameter)} mm \xB7 Gewicht ca. ${de1(sp.weight)} g${r.size ? "" : " (bei Gr\xF6\xDFe 54)"}`
+            : ""));
+      v("[data-view]", e).forEach((b) => {
+        let k = b.dataset.view;
+        (b.setAttribute("aria-pressed", String(k === "duo" ? duo : !duo && k === view)), k === "top" && (b.disabled = r.stones === "ohne"));
+      });
+      cfg.rings.forEach((x, i) => {
+        let ul = c(`[data-summary="${i}"]`, e),
+          sub = c(`[data-ring-sub="${i}"]`, e),
+          rows = ringLines(x, specs(x));
+        (sub && (sub.textContent = `${alloyName(x)} \xB7 ${de1(x.width)} mm`),
+          ul &&
+            ((ul.innerHTML = ""),
+            rows.forEach(([k, val], n) => {
+              let li = document.createElement("li");
+              ((li.innerHTML = "<span></span><span></span>"),
+                (li.children[0].textContent = k),
+                (li.children[1].textContent = val),
+                flash && last[i][n] && last[i][n][1] !== val && li.classList.add("is-changed"),
+                ul.appendChild(li));
+            })),
+          (last[i] = rows));
+      });
+      R.set(CFG_KEY, cfg);
+    },
+    view = "front",
+    look = (k) => {
+      if (k === "duo") duo = !duo;
+      else ((duo = !1), (view = k));
+      (show(), viewer && (duo ? viewer.view("front") : viewer.view(view)), paint(!1));
+    },
+    summary = () =>
+      cfg.rings
+        .map(
+          (r, i) =>
+            `Ring ${i + 1}: ` +
+            ringLines(r, specs(r))
+              .map(([k, val]) => `${k} ${val}`)
+              .join("; "),
+        )
+        .join("\n");
+  (fill(),
+    paint(!1),
+    form.addEventListener("input", (ev) => {
+      let t = ev.target,
+        n = t.name,
+        r = ring();
+      if (n === "which") {
+        ((cfg.active = +t.value), fill(), duo || show(), paint(!1));
+        return;
+      }
+      if (!(n in r)) return;
+      ((r[n] = n === "engraving" ? t.value.slice(0, 30) : n === "width" || n === "height" || n === "stoneSize" ? parseFloat(t.value) : t.value),
+        show(),
+        paint(!0),
+        // der Blick folgt der Auswahl: Gravur innen, Steine von oben, Form im Profil
+        viewer &&
+          !duo &&
+          (n === "engraving" || n === "script"
+            ? r.engraving && view !== "inside" && look("inside")
+            : n === "stones" || n === "stoneSize"
+              ? r.stones !== "ohne"
+                ? view !== "top" && look("top")
+                : view === "top" && look("front")
+              : (n === "width" || n === "height" || n === "profile") && view === "inside" && look("front")));
+    }),
+    v("[data-view]", e).forEach((b) => b.addEventListener("click", () => look(b.dataset.view))),
+    v("[data-insert]", e).forEach((b) =>
+      b.addEventListener("click", () => {
+        let i = form.elements.engraving,
+          a = i.selectionStart ?? i.value.length,
+          z2 = i.selectionEnd ?? a;
+        ((i.value = (i.value.slice(0, a) + b.dataset.insert + i.value.slice(z2)).slice(0, 30)),
+          i.focus(),
+          i.setSelectionRange(a + 1, a + 1),
+          i.dispatchEvent(new Event("input", { bubbles: !0 })));
+      }),
+    ),
+    c("[data-copy]", e)?.addEventListener("click", () => {
+      // den anderen Ring \xFCbernehmen – Gr\xF6\xDFe und Gravur bleiben
+      let r = ring(),
+        o = cfg.rings[1 - cfg.active];
+      (Object.assign(r, { ...o, size: r.size, engraving: r.engraving, script: r.script }), fill(), show(), paint(!0));
+    }),
+    c("[data-clear]", e)?.addEventListener("click", () => {
+      ((cfg = studioDefaults()), (duo = !1), (view = "front"), history.replaceState(null, "", location.pathname), fill(), show(), viewer && viewer.view("front"), paint(!1));
+    }),
+    c("[data-share]", e)?.addEventListener("click", async (ev) => {
+      let b = ev.currentTarget,
+        url = `${location.origin}${location.pathname}#c=${encodeURIComponent(JSON.stringify(cfg))}`,
+        label = c("span", b) || b,
+        old = label.textContent,
+        say = (t) => {
+          ((label.textContent = t), setTimeout(() => (label.textContent = old), 2200));
+        };
+      try {
+        if (navigator.share && oe("(pointer: coarse)")) await navigator.share({ title: "Meine Trauringe – Juwelier Rubin", url });
+        else (await navigator.clipboard.writeText(url), say("Link kopiert"));
+      } catch (x) {
+        x && x.name === "AbortError" || say("Kopieren nicht m\xF6glich");
+      }
+    }),
+    form.addEventListener("submit", (ev) => {
+      (ev.preventDefault(), R.set(se, { cfg, summary: summary() }, "session"), (location.href = form.action));
+    }));
+  (async () => {
+    try {
+      let [m] = await Promise.all([de(), be()]);
+      ((mod = m), paint(!1));
+      if (!ce()) return;
+      ((viewer = m.createRingViewer(c("canvas", stage), {
+        mode: "single",
+        autoRotate: !0,
+        interactive: !0,
+        preserve: !0,
+        reflect: !0,
+        fontFamily: '"Fraunces"',
+        restPitch: 0.2,
+        envSize: !oe("(pointer: coarse)") && (navigator.deviceMemory || 4) >= 8 ? 1024 : void 0,
+        state: Object.assign({ mode: "single", stand: !0, fit: FIT }, ringState(ring())),
+        onReady: () => {
+          ($ || (viewer.setView(-0.4, 0.5, 0.88), viewer.frame({ yaw: 0.35, pitch: 0.2, zoom: 1 })), fe(stage));
+        },
+      })),
+        viewer.setView(0.35, 0.2),
+        window.addEventListener("pageswap", () => viewer.renderNow()));
+    } catch (x) {
+      console.warn("3D ring unavailable", x);
+    }
+  })();
 }
 var ne = "rubin-embeds-ok";
 function ct() {

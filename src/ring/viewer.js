@@ -4,11 +4,12 @@ import { METALS, TAU, clamp } from "./data.js";
 import { createStudio } from "./studio.js";
 import { createGround } from "./ground.js";
 import { engravingCanvas, metalColor } from "./band.js";
-import { buildRing, buildStud, buildStone, posePair, poseCascade, restOnGround } from "./models.js";
+import { buildRing, buildStud, buildStone, posePair, poseCascade, poseDuo, standOnGround, restOnGround } from "./models.js";
 
 const V3 = THREE.Vector3;
 const FIT = { single: 30, solitaire: 34 };
-const GROUNDED = { pair: 1, lineup: 1, studs: 1, stone: 1 };
+const GROUNDED = { pair: 1, lineup: 1, studs: 1, stone: 1, duo: 1 };
+const TEXT_KEYS = { engraving: 1, engravingItalic: 1, engravingScript: 1 };
 
 // Exakter Schritt einer kritisch gedämpften Feder – unabhängig von der Bildrate.
 function spring(s, target, w, dt) {
@@ -51,22 +52,30 @@ export function createRingViewer(canvas, opts = {}) {
 
   let state = {};
   let items = [];
-  let engraveTex = null, engraveCanvas = null;
+  const engraved = []; // je Ring: Zeichenfläche und Textur der Innengravur
   let fit = 30;
   let extent = null; // Ausdehnung aufliegender Szenen (Breite beim Drehen, Höhe)
   let rebuildQueued = 0;
   let alive = true;
 
-  function engraving() {
-    engraveCanvas = engravingCanvas(state.engraving, o.fontFamily, state.engravingItalic, { metal: state.metal, size: state.mode === "pair" ? 64 : state.mode === "solitaire" ? 53 : 54, width: state.mode === "pair" ? 5 : state.mode === "solitaire" ? 2.2 : state.width || 4.5, canvas: engraveCanvas });
-    if (!engraveTex) {
-      engraveTex = new THREE.CanvasTexture(engraveCanvas);
-      engraveTex.wrapS = THREE.RepeatWrapping;
-      engraveTex.anisotropy = maxAniso;
-      engraveTex.colorSpace = THREE.NoColorSpace;
+  function engraving(i = 0, c = state) {
+    const e = engraved[i] || (engraved[i] = { canvas: null, tex: null });
+    const pair = state.mode === "pair", soli = state.mode === "solitaire";
+    e.canvas = engravingCanvas(c.engraving, o.fontFamily, c.engravingItalic, {
+      metal: c.metal,
+      size: pair ? 64 : soli ? 53 : +c.size || 54,
+      width: pair ? 5 : soli ? 2.2 : c.width || 4.5,
+      script: c.engravingScript,
+      canvas: e.canvas,
+    });
+    if (!e.tex) {
+      e.tex = new THREE.CanvasTexture(e.canvas);
+      e.tex.wrapS = THREE.RepeatWrapping;
+      e.tex.anisotropy = maxAniso;
+      e.tex.colorSpace = THREE.NoColorSpace;
     }
-    engraveTex.needsUpdate = true;
-    return engraveTex;
+    e.tex.needsUpdate = true;
+    return e.tex;
   }
 
   function clear() {
@@ -83,8 +92,10 @@ export function createRingViewer(canvas, opts = {}) {
   function build() {
     clear();
     const mode = state.mode;
-    const grounded = !!GROUNDED[mode];
+    // Lage und Maße werden in der Grundstellung bestimmt, unabhängig vom aktuellen Blickwinkel
     stage.position.set(0, 0, 0);
+    root.rotation.set(0, 0, 0);
+    root.updateMatrixWorld(true);
     if (mode === "pair") {
       const tex = engraving();
       const standing = buildRing({ size: 64, width: 5, thickness: 1.9, profile: "bombiert", metal: state.metal, finish: "poliert", upright: false }, studio, tex);
@@ -124,21 +135,31 @@ export function createRingViewer(canvas, opts = {}) {
       );
       r.rotation.set(state.tilt ?? 0.32, 0, 0);
       items = [r];
+    } else if (mode === "duo") {
+      // zwei frei gestaltete Ringe nebeneinander, in ihren wahren Größen
+      const rings = (state.rings || []).slice(0, 2).map((c, i) => buildRing(c, studio, engraving(i, c)));
+      if (rings.length === 2) poseDuo(rings[0], rings[1]);
+      else rings.forEach(standOnGround);
+      items = rings;
     } else {
-      const r = buildRing(Object.assign({}, state, { size: 54 }), studio, engraving());
-      r.rotation.set(state.tilt ?? 0.42, 0, 0);
+      const r = buildRing(state, studio, engraving());
+      if (state.stand) standOnGround(r); // steht auf der Fläche
+      else r.rotation.set(state.tilt ?? 0.42, 0, 0); // schwebt frei (Standbilder)
       items = [r];
     }
     items.forEach((it) => stage.add(it));
+    const grounded = !!GROUNDED[mode] || (mode === "single" && !!state.stand);
 
     if (grounded) {
       const box = new THREE.Box3().setFromObject(stage, true);
       const c = box.getCenter(new V3()), sz = box.getSize(new V3());
-      stage.position.set(-c.x, -c.y, -c.z);
+      // mit Spiegelung rückt das Stück etwas nach oben, damit darunter Platz für das Spiegelbild bleibt
+      const lift = o.reflect ? sz.y * 0.09 : 0;
+      stage.position.set(-c.x, -c.y + lift, -c.z);
       extent = { w: Math.hypot(sz.x, sz.z), h: sz.y };
       fit = state.fit || 0;
-      if (!ground) ((ground = createGround(renderer, { res: coarse ? 512 : 1024 })), root.add(ground.group));
-      ground.group.position.set(0, -c.y, 0);
+      if (!ground) ((ground = createGround(renderer, { res: coarse ? 512 : 1024, reflect: !!o.reflect })), root.add(ground.group));
+      ground.group.position.set(0, -c.y + lift, 0);
       ground.group.visible = true;
       root.rotation.set(0, 0, 0);
       root.updateMatrixWorld(true);
@@ -255,6 +276,7 @@ export function createRingViewer(canvas, opts = {}) {
     ratio = Math.max(1, Math.min(wanted, Math.sqrt(budget / (w * h)))) * scale;
     renderer.setPixelRatio(ratio);
     renderer.setSize(w, h, false);
+    if (ground) ground.resize(w * ratio * (coarse ? 0.5 : 0.75), h * ratio * (coarse ? 0.5 : 0.75));
     camera.aspect = w / h;
     // Bildausschnitt: frei schwebende Stücke nach festem Maß, aufliegende Szenen nach ihrer Ausdehnung
     const need = extent && !fit ? Math.max((extent.h + extent.w * 0.3) * 1.08, (extent.w * 1.08) / camera.aspect) : fit / Math.min(1, camera.aspect);
@@ -365,7 +387,7 @@ export function createRingViewer(canvas, opts = {}) {
       state = Object.assign({}, state, patch);
       const changed = Object.keys(patch).filter((k) => JSON.stringify(prev[k]) !== JSON.stringify(state[k]));
       if (!changed.length) return;
-      if (state.mode !== "pair" && changed.every((k) => k === "engraving" || k === "engravingItalic")) {
+      if (state.mode !== "pair" && state.mode !== "duo" && changed.every((k) => TEXT_KEYS[k])) {
         engraving();
         dirty = true;
         wake();
@@ -373,7 +395,7 @@ export function createRingViewer(canvas, opts = {}) {
       }
       if (changed.length === 1 && changed[0] === "metal" && !state.bicolor && items.length && !rebuildQueued && (state.mode === "single" || state.mode === "pair")) {
         fadeMetal(state.metal);
-        if (engraveCanvas) engraving(); // Stempel passt sich der Legierung an
+        if (engraved[0]) engraving(); // Stempel passt sich der Legierung an
         wake();
         return;
       }
@@ -397,18 +419,25 @@ export function createRingViewer(canvas, opts = {}) {
       wake();
     },
     showInside() {
-      yawT = nearest(0);
-      pitchT = 0.62;
-      idleSince = performance.now() + 5000;
+      api.view("inside");
+    },
+    // feste Blickwinkel: vorn, Profil (Blick auf die Kante), innen (Gravur), oben (Steinbesatz)
+    view(name) {
+      const g = pitchMin > 0; // steht auf der Fläche
+      const v = { front: [0.35, g ? 0.2 : 0.18, 1], side: [Math.PI / 2, g ? 0.12 : 0.05, 1.08], inside: [0, g ? 1.02 : 0.62, g ? 1.06 : 1], top: [0.42, g ? 1.2 : 0.85, 1.12] }[name];
+      if (!v) return;
+      const [y, p, z] = v;
+      if (reduced) ((yaw.x = nearest(y)), (pitch.x = clamp(p, pitchMin, pitchMax)), (zoom.x = zoomT = z), place());
+      else ((yawT = nearest(y)), (pitchT = clamp(p, pitchMin, pitchMax)), (zoomT = z));
+      yaw.v = pitch.v = 0;
+      restPitch = clamp(p, pitchMin, pitchMax);
+      idleSince = performance.now() + (name === "front" ? 0 : 6000); // bei einem gewählten Blickwinkel erst später weiterdrehen
+      dirty = true;
       wake();
     },
     reset() {
-      yawT = nearest(0.35);
-      pitchT = clamp(0.18, pitchMin, pitchMax);
-      zoomT = 1;
-      restPitch = clamp(o.restPitch || 0, pitchMin, pitchMax);
-      idleSince = performance.now();
-      wake();
+      api.view("front");
+      restPitch = clamp(o.restPitch || restPitch, pitchMin, pitchMax);
     },
     renderNow() {
       draw();
@@ -432,7 +461,7 @@ export function createRingViewer(canvas, opts = {}) {
       io.disconnect();
       document.removeEventListener("visibilitychange", onVis);
       clear();
-      engraveTex && engraveTex.dispose();
+      engraved.forEach((e) => e && e.tex && e.tex.dispose());
       ground && ground.dispose();
       studio.dispose();
       renderer.dispose();
@@ -444,7 +473,7 @@ export function createRingViewer(canvas, opts = {}) {
     { mode: o.mode, size: 54, width: 4.5, thickness: 1.8, profile: "bombiert", metal: "gelbgold", metal2: "weissgold", bicolor: false, finish: "poliert", stones: "eins", stoneSize: 1, engraving: "", engravingItalic: true },
     o.state || {},
   );
-  if (GROUNDED[state.mode]) ((pitch.x = Math.max(o.restPitch || 0.3, 0.07)), (restPitch = pitch.x));
+  if (GROUNDED[state.mode] || state.stand) ((pitch.x = Math.max(o.restPitch || 0.3, 0.07)), (restPitch = pitch.x));
   build();
   wake();
   (async () => {
