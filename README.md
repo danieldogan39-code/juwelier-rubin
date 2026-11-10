@@ -52,6 +52,16 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
   eine eigene Hochkant-Vorlage `<szene>-p.jpg` hat Vorrang.
 - Der Wechsel besteht nur aus Verschiebungen (kein 3D, kein Video). Ohne Grafikbeschleunigung: weiche Überblendung.
 
+## Startseite: Karten „Aus unseren Vitrinen“
+
+- Alle fünf Karten zeigen Fotos mit mehreren Modellen in Bewegung. Vorlagen in `src/karten/<name>.png`,
+  `python3 src/karten/kartenbild.py` setzt den hellen Grund auf Weiß (Uhren: auf Schwarz) und erzeugt die Größen.
+- In der Karte liegt das Foto multipliziert über dem Kartenton (Uhren: aufgehellt über der dunklen Karte), füllt den
+  Bildbereich bis an den Rand und läuft zur Schrift hin weich aus. Bildausschnitt je Karte: `--pos` (breit) und
+  `--pos-s` (schmal) im `style` der Karte.
+- Solange der Abschnitt im Bild steht, schweben die Fotos langsam (nicht bei „Weniger Bewegung“ und nicht ohne
+  Grafikbeschleunigung).
+
 ## Rechenlast
 
 - Baukasten und Ring-Studio zeichnen nur, wenn sich etwas ändert. Der Baukasten startet seine 3D-Ansicht erst beim

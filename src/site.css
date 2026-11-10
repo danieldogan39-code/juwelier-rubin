@@ -2038,13 +2038,47 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
     border-color 0.4s,
     color 0.4s;
 }
-/* Foto auf weißem Grund: liegt multipliziert über dem Kartenton, so geht der Grund nahtlos in der Karte auf */
-.coll.is-shot .coll-media img {
-  padding: 5% 6% 0;
-  mix-blend-mode: multiply;
+/* Fotokarten: Das Bild füllt den oberen Teil der Karte bis an den Rand und läuft nach unten weich aus.
+   Heller Grund liegt multipliziert über dem Kartenton, das Uhrenbild (schwarzer Grund) aufgehellt über der dunklen Karte. */
+.coll.is-shot .coll-media {
+  min-height: 250px;
 }
-.coll-d.is-shot .coll-media img {
-  padding: 2% 3% 0;
+.coll.is-shot .coll-media img {
+  padding: 0;
+  object-fit: cover;
+  object-position: var(--pos-s, 50% 50%);
+  mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(to bottom, #000 66%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 66%, transparent 100%);
+  scale: 1.03;
+}
+.coll.is-dark.is-shot .coll-media img {
+  mix-blend-mode: screen;
+}
+.coll.is-shot .coll-body {
+  margin-top: -0.9rem;
+}
+/* langsames Schweben, solange der Abschnitt im Bild steht (Klasse setzt das Skript; nicht bei „Weniger Bewegung“) */
+.collections.is-playing .coll.is-shot .coll-media img {
+  animation: shot-float 9s ease-in-out infinite alternate;
+}
+.collections.is-playing .coll:nth-child(2n).is-shot .coll-media img {
+  animation-duration: 11s;
+  animation-delay: -4s;
+}
+.collections.is-playing .coll:nth-child(3n).is-shot .coll-media img {
+  animation-duration: 13s;
+  animation-delay: -7s;
+}
+@keyframes shot-float {
+  0% {
+    translate: 0 0.8%;
+    scale: 1.03;
+  }
+  to {
+    translate: 0 -1.4%;
+    scale: 1.075;
+  }
 }
 .coll.is-photo .coll-media {
   position: absolute;
@@ -2175,7 +2209,30 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
   }
   .coll-d,
   .coll-e {
-    min-height: 400px;
+    min-height: 440px;
+  }
+  .coll.is-shot .coll-media img {
+    object-position: var(--pos, 50% 50%);
+  }
+  /* kleine Karten rechts: Bild links bis an den Rand, läuft zur Schrift hin aus */
+  .coll-b.is-shot,
+  .coll-c.is-shot {
+    grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+  }
+  .coll-b.is-shot .coll-title,
+  .coll-c.is-shot .coll-title {
+    font-size: clamp(1.4rem, 5.3cqi, 2.3rem);
+  }
+  .coll-b.is-shot .coll-media img,
+  .coll-c.is-shot .coll-media img {
+    padding: 0;
+    -webkit-mask-image: linear-gradient(to right, #000 56%, transparent 96%);
+    mask-image: linear-gradient(to right, #000 56%, transparent 96%);
+  }
+  .coll-b.is-shot .coll-body,
+  .coll-c.is-shot .coll-body {
+    margin-top: 0;
+    padding-left: 0.4rem;
   }
   .collections.three {
     grid-template-columns: repeat(3, minmax(0, 1fr));

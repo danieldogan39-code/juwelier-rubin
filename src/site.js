@@ -425,7 +425,7 @@ function Me() {
   });
 }
 function Se() {
-  $ || v(".voices, .gold-band, .rmap").forEach((e) => H(e, (a) => e.classList.toggle("is-playing", a), { rootMargin: "10% 0px" }));
+  $ || v(".voices, .gold-band, .rmap" + (hwGL ? ", .collections" : "")).forEach((e) => H(e, (a) => e.classList.toggle("is-playing", a), { rootMargin: "10% 0px" }));
 }
 function Ae() {
   v("[data-ticker]").forEach((e) => {
