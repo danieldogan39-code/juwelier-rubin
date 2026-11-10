@@ -51,6 +51,8 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
 - Baukasten und Ring-Studio zeichnen nur, wenn sich etwas ändert. Der Baukasten startet seine 3D-Ansicht erst beim
   Bedienen oder wenn er kurz im Bild steht.
 - „Weniger Bewegung“ oder Datensparmodus: kein Video, Standbild; 3D beim Anfassen.
+- Geräte ohne Grafikbeschleunigung (WebGL nur per Software): weder Video noch 3D im Hero, stattdessen das Standbild
+  im gewählten Metall (`assets/img/r-pair-<metall>-900.*`). Zum Testen in so einer Umgebung: `?gl=1` an die Adresse.
 - Videos neu aufnehmen (nach Änderungen am Ringpaar): Einzelbilder mit der Testseite `.dev/t.html`
   (`mode: pair`, Spiegelung an, Ansicht `0.6 + 2π·i/600, 0.3, 1`, 960 × 960, transparent) und dann mit ffmpeg
   zusammensetzen: Farbe über Schwarz und Deckkraft übereinander (`vstack`), H.264, `-crf 27` (640er: `-crf 26`),

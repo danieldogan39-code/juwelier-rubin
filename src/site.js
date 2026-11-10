@@ -1474,6 +1474,20 @@ var ue = (e) => Math.min(window.devicePixelRatio || 1, e),
   tt = { gelbgold: "Gelbgold 585", rosegold: "Ros\xE9gold 585", weissgold: "Wei\xDFgold 585", platin: "Platin 950" };
 // Zeichnet ein Video mit Transparenz: obere Bildhälfte Farbe, untere Hälfte Deckkraft. Ein Viereck, ein winziger
 // Shader – kostet fast nichts und läuft überall dort, wo H.264 von der Hardware dekodiert wird.
+// Hat das Gerät eine Grafikeinheit, die WebGL wirklich beschleunigt? Ohne sie (reine Software-Darstellung) wären
+// Video-Zusammensetzung und 3D eine Last statt einer Entlastung – dann bleibt es beim Standbild.
+var hwGL = (() => {
+  if (/[?&]gl=1/.test(location.search)) return !0;
+  try {
+    let gl = document.createElement("canvas").getContext("webgl", { failIfMajorPerformanceCaveat: !0 });
+    if (!gl) return !1;
+    let info = gl.getExtension("WEBGL_debug_renderer_info"),
+      name = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : "";
+    return !/swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+  } catch {
+    return !1;
+  }
+})();
 function alphaVideo(canvas) {
   let gl = null;
   try {
@@ -1562,8 +1576,17 @@ function nt() {
   METALS.includes(metal) ? mark(metal) : (metal = "gelbgold");
   let conn = navigator.connection,
     probe = document.createElement("video"),
-    canVideo = !$ && !(conn && (conn.saveData || /2g/.test(conn.effectiveType || ""))) && !!probe.canPlayType && probe.canPlayType('video/mp4; codecs="avc1.640028"') !== "",
-    can3d = ce(),
+    canVideo = hwGL && !$ && !(conn && (conn.saveData || /2g/.test(conn.effectiveType || ""))) && !!probe.canPlayType && probe.canPlayType('video/mp4; codecs="avc1.640028"') !== "",
+    can3d = hwGL && ce(),
+    // Standbild im gewählten Metall – für Geräte, auf denen weder Video noch 3D sinnvoll laufen
+    still = (m) => {
+      let pic = c(".poster", e),
+        img = pic && c("img", pic);
+      if (!img) return;
+      let gold = m === "gelbgold",
+        set = (ext) => (gold ? [800, 1200, 1500].map((w) => `assets/img/r-pair-${w}.${ext} ${w}w`).join(", ") : `assets/img/r-pair-${m}-900.${ext} 900w`);
+      (v("source", pic).forEach((so) => (so.srcset = set(/avif/.test(so.type) ? "avif" : "webp"))), (img.src = gold ? "assets/img/r-pair-1200.webp" : `assets/img/r-pair-${m}-900.webp`));
+    },
     mode = "poster", // poster | turn (Video) | live (Echtzeit)
     vids = {},
     cur = null,
@@ -1785,10 +1808,11 @@ function nt() {
       if (mode === "live") (viewer.set({ metal: m }), canVideo && get(m));
       else if (mode === "turn") swap(m);
       else if (canVideo) startTurn();
-      else
+      else if (can3d)
         boot().then((l) => {
-          l && mode !== "live" && goLive(!1);
+          l ? mode !== "live" && goLive(!1) : still(m);
         });
+      else still(m);
     };
   v("[data-metal]", sec).forEach((b) => b.addEventListener("click", () => setMetal(b.dataset.metal)));
 
@@ -1856,7 +1880,9 @@ function nt() {
       { threshold: 0.02 },
     ).observe(e),
     document.addEventListener("visibilitychange", () => mode === "turn" && cur && (document.hidden || !inView ? cur.pause() : play(cur))));
-  // ohne Video (weniger Bewegung gewünscht, Datensparmodus): Standbild; die Echtzeit-Ansicht startet beim Anfassen
+  // ohne Video (weniger Bewegung gewünscht, Datensparmodus, keine Grafikbeschleunigung): Standbild im gewählten Metall;
+  // die Echtzeit-Ansicht startet beim Anfassen, sofern das Gerät sie beschleunigt
+  metal !== "gelbgold" && !canVideo && still(metal);
   canVideo && (document.readyState === "complete" ? et(startTurn, 500) : window.addEventListener("load", () => et(startTurn, 500), { once: !0 }));
 }
 // ---------- Ring-Studio und Ring-Baukasten ----------
@@ -2042,7 +2068,7 @@ function at() {
   (["pointerdown", "focusin"].forEach((n) => e.addEventListener(n, start, { once: !0, passive: !0 })),
     new IntersectionObserver(
       (en, io) => {
-        (clearTimeout(dwell), started ? io.disconnect() : en[0].isIntersecting && (dwell = setTimeout(start, 700)));
+        (clearTimeout(dwell), started || !hwGL ? io.disconnect() : en[0].isIntersecting && (dwell = setTimeout(start, 700)));
       },
       { threshold: 0.45 },
     ).observe(stage));
