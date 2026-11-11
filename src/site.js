@@ -427,36 +427,9 @@ function Me() {
 function Se() {
   $ || v(".voices, .gold-band, .rmap" + (hwGL ? ", .collections" : "")).forEach((e) => H(e, (a) => e.classList.toggle("is-playing", a), { rootMargin: "10% 0px" }));
 }
+// Laufband: läuft als reine CSS-Bewegung in gleichmäßigem Tempo, nur solange es im Bild steht
 function Ae() {
-  v("[data-ticker]").forEach((e) => {
-    let a = c(".ticker-track", e);
-    if (!a || $) return;
-    let t = 0,
-      n = 0,
-      s = !1,
-      i = 0,
-      o = 0,
-      r = 1,
-      d = () => {
-        n = a.scrollWidth / 2;
-      };
-    (d(), window.addEventListener("resize", d));
-    let l = (f) => {
-      if (((i = 0), !s)) return;
-      let h = Math.min(48, f - (o || f));
-      o = f;
-      let u = V.v;
-      Math.abs(u) > 0.5 && (r = u > 0 ? 1 : -1);
-      let g = 0.045 + Math.min(1.4, Math.abs(u) * 0.05);
-      ((t -= r * g * h),
-        n && (t <= -n && (t += n), t > 0 && (t -= n)),
-        (a.style.transform = `translate3d(${t.toFixed(2)}px, 0, 0)`),
-        (i = requestAnimationFrame(l)));
-    };
-    H(e, (f) => {
-      ((s = f), f && !i && ((o = 0), (i = requestAnimationFrame(l))));
-    });
-  });
+  $ || v("[data-ticker]").forEach((e) => H(e, (a) => e.classList.toggle("is-playing", a)));
 }
 function Ie() {
   v("[data-rail]").forEach((e) => {

@@ -29,10 +29,10 @@ def portrait(im,box,W=1080,H=2340,fade=0.42,top=0):
     out.paste(Image.new('RGB',(W,H),V),(0,0),g.resize((W,H)))
     return out
 BOX={
- 'trauringe':(0.505,0.18,0.955,1.0),
- 'schmuck':(0.525,0.27,0.925,1.0),
+ 'trauringe':(0.505,0.18,0.955,1.0,250),
+ 'schmuck':(0.525,0.27,0.925,1.0,210),
  'uhren':(0.455,0.0,0.96,1.0,130),
- 'goldankauf':(0.39,0.03,1.0,1.0),
+ 'goldankauf':(0.39,0.03,1.0,1.0,240),
  'werkstatt':(0.48,0.08,0.88,1.0),
 }
 for slug,box in BOX.items():

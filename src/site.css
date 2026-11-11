@@ -296,6 +296,7 @@ textarea {
 .h2 em,
 .h3 em,
 .statement-text em,
+.wish-text em,
 .footer-claim em {
   font-style: normal;
   color: var(--em);
@@ -1928,38 +1929,46 @@ html[data-tone="dark"].has-intro:not(.intro-done) .site-header:not(.is-solid) .b
     display: none;
   }
 }
+/* Laufband unter dem Hero: eine ruhige, feine Zeile in gleichmäßigem, langsamem Tempo */
 .ticker {
   position: relative;
   overflow: hidden;
   background: var(--velvet);
   border-block: 1px solid var(--line-dark);
-  padding-block: clamp(1.1rem, 0.8rem + 1.2vw, 1.9rem);
+  padding-block: 1.05rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
 }
 .ticker-track {
   display: flex;
   width: max-content;
-  gap: clamp(1.6rem, 3vw, 3.4rem);
-  will-change: transform;
+  gap: 2.4rem;
 }
 .ticker-track span {
   display: inline-flex;
   align-items: center;
-  gap: clamp(1.6rem, 3vw, 3.4rem);
-  font: 500 clamp(1.3rem, 1rem + 1.4vw, 2.2rem)/1 var(--head);
-  letter-spacing: -0.02em;
+  gap: 2.4rem;
+  font: 600 var(--label) / 1 var(--sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   white-space: nowrap;
-  color: var(--pearl);
-}
-.ticker-track span:nth-child(2n) {
-  color: var(--champagne);
+  color: var(--mist);
 }
 .ticker-track span:after {
   content: "";
-  width: 0.32em;
-  height: 0.32em;
-  background: var(--ruby-glow);
-  transform: rotate(45deg);
-  opacity: 0.8;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--champagne);
+  opacity: 0.6;
+}
+.ticker.is-playing .ticker-track {
+  animation: marquee 80s linear infinite;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ticker:hover .ticker-track {
+    animation-play-state: paused;
+  }
 }
 .collections {
   display: grid;
