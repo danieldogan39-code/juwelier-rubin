@@ -8061,6 +8061,65 @@ a.gbadge {
   max-height: 54svh;
   justify-self: center;
 }
+/* warmer Lichtschein hinter dem Ring, damit er nicht im Schwarz hängt */
+.builder-stage:before {
+  content: "";
+  position: absolute;
+  inset: 4% 2% 12%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(168, 112, 78, 0.3), rgba(150, 100, 74, 0.1) 58%, transparent 78%);
+}
+/* Zeile unter dem Ring: Metall, Breite, Gewicht, Steine */
+.builder-spec {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 0;
+  min-height: 1.4rem;
+  margin: -0.6rem 0 0;
+  font: 500 0.82rem/1.4 var(--sans);
+  letter-spacing: 0.04em;
+  color: var(--mist);
+  font-variant-numeric: tabular-nums;
+}
+.builder-spec span + span:before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  margin: 0 0.75rem 0.2em;
+  border-radius: 50%;
+  background: var(--champagne);
+  opacity: 0.6;
+}
+.builder.no-3d .builder-spec {
+  display: none;
+}
+@media (max-width: 599px) {
+  /* schmal: die Breite entfällt, damit die Zeile nicht umbricht */
+  .builder-spec span:nth-child(2) {
+    display: none;
+  }
+}
+/* Auswahl als gleich breite Felder */
+.builder .seg {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+.builder .seg span {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 0.6rem;
+  font-size: 0.9rem;
+  text-align: center;
+  white-space: nowrap;
+}
+.builder .seg input:checked + span {
+  box-shadow: 0 0 0 1px var(--pearl);
+}
 .builder-form {
   display: grid;
   gap: 1.1rem;
@@ -8151,7 +8210,8 @@ html:not(.js) .builder-fallback {
 @media (min-width: 960px) {
   .builder-grid {
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    grid-template-areas: "stage head" "stage form" "stage end";
+    grid-template-areas: "stage head" "stage form" "spec form" ". end";
+    grid-template-rows: auto 1fr auto auto;
     column-gap: clamp(2.5rem, 5vw, 6rem);
     row-gap: 1.6rem;
     align-items: start;
@@ -8162,63 +8222,68 @@ html:not(.js) .builder-fallback {
   .builder-stage {
     grid-area: stage;
     aspect-ratio: 1;
-    max-height: min(74svh, 46rem);
+    max-height: min(70svh, 44rem);
     align-self: center;
+  }
+  .builder-spec {
+    grid-area: spec;
+    margin-top: -2.2rem;
+    align-self: start;
   }
   .builder-form {
     grid-area: form;
-    gap: 0;
+    gap: 1.15rem;
+    container-type: inline-size;
   }
   .builder-end {
     grid-area: end;
+    grid-column: 2;
+    margin-top: 0.4rem;
   }
   .builder-tabs {
     display: none;
   }
+  /* jede Entscheidung: Nummer und Name als feine Zeile, darunter die Felder */
   .bopt,
   .bopt.is-current {
     display: grid;
-    grid-template-columns: 8.5rem minmax(0, 1fr);
-    align-items: center;
-    column-gap: 1rem;
-    padding-block: 0.8rem;
-    border-top: 1px solid var(--line-dark);
-  }
-  .bopt:last-of-type {
-    border-bottom: 1px solid var(--line-dark);
+    gap: 0.55rem;
   }
   .bopt legend,
   .bopt-label {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
-    float: left;
+    gap: 0.6rem;
+    width: 100%;
     padding: 0;
-    font: 600 0.95rem/1.2 var(--sans);
-    color: var(--pearl);
+    font: 600 var(--label) / 1 var(--sans);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mist);
   }
   .bopt legend {
-    width: 8.5rem;
-    margin-right: 1rem;
-    min-height: 44px;
+    margin-bottom: 0.55rem;
   }
-  .bopt legend + .seg {
-    overflow: hidden;
-  }
-  fieldset.bopt,
-  fieldset.bopt.is-current {
-    display: block;
+  .bopt legend:after,
+  .bopt-label:after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line-dark);
   }
   .bopt legend span,
   .bopt-label span {
-    display: grid;
-    place-items: center;
-    width: 1.6rem;
-    height: 1.6rem;
-    border: 1px solid var(--line-dark);
-    border-radius: 50%;
-    font-size: 0.72rem;
     color: var(--champagne);
+    font-variant-numeric: tabular-nums;
+  }
+  .bopt legend span:before,
+  .bopt-label span:before {
+    content: "0";
+  }
+}
+@container (min-width: 33rem) {
+  .builder .seg {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

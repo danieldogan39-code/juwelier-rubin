@@ -433,7 +433,7 @@ export function createRingViewer(canvas, opts = {}) {
     // feste Blickwinkel: vorn, Profil (Blick auf die Kante), innen (Gravur), oben (Steinbesatz)
     view(name) {
       const g = pitchMin > 0; // steht auf der Fläche
-      const v = { front: [0.35, g ? 0.2 : 0.18, 1], side: [Math.PI / 2, g ? 0.12 : 0.05, 1.08], inside: [0, g ? 1.02 : 0.62, g ? 1.06 : 1], top: [0.42, g ? 1.2 : 0.85, 1.12] }[name];
+      const v = { front: g ? [0.6, 0.62, 1.1] : [0.35, 0.18, 1], side: [Math.PI / 2, g ? 0.12 : 0.05, 1.08], inside: [0, g ? 1.02 : 0.62, g ? 1.06 : 1], top: [0.42, g ? 1.2 : 0.85, 1.12] }[name];
       if (!v) return;
       const [y, p, z] = v;
       if (reduced) ((yaw.x = nearest(y)), (pitch.x = clamp(p, pitchMin, pitchMax)), (zoom.x = zoomT = z), place());

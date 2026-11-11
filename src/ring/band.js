@@ -207,7 +207,10 @@ export function metalMaterial(metal, finishKey, env, { part = "outer", circumfer
     metalness: 1,
     roughness: part === "inner" ? 0.06 : f.roughness,
     envMap: env,
-    envMapIntensity: 1,
+    // Mattierte Flächen streuen das Licht breit; im dunklen Studio wirken sie sonst stumpf und zu dunkel.
+    // Etwas mehr Umgebungslicht entspricht dem Lichtzelt, in dem mattes Gold fotografiert wird; helle Metalle
+    // (Weißgold) brauchen das nicht, sie würden ausbrennen.
+    envMapIntensity: part !== "inner" && part !== "setting" && f.grain ? 1 + 0.5 * Math.min(1, Math.max(0, (0.78 - Math.min(m.f0[0], m.f0[1], m.f0[2])) / 0.42)) : 1,
   });
   if (f.aniso) {
     mat.anisotropy = f.aniso;

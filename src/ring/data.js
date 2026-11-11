@@ -36,7 +36,7 @@ for (const m of Object.values(METALS)) {
 export const FINISHES = {
   poliert: { label: "Poliert", roughness: 0.045, aniso: 0, grain: null },
   laengsmatt: { label: "Längsmatt", roughness: 0.3, aniso: 0.8, grain: "brushed" },
-  eismatt: { label: "Eismatt", roughness: 0.46, aniso: 0, grain: "frost" },
+  eismatt: { label: "Eismatt", roughness: 0.36, aniso: 0, grain: "frost" },
   quermatt: { label: "Quermatt", roughness: 0.3, aniso: 0.8, grain: "brushed", across: true },
   mitte: { label: "Mitte poliert, Seiten matt", roughness: 0.3, aniso: 0.8, grain: "brushed" },
 };

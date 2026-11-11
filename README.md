@@ -35,6 +35,12 @@ Entwurf von Medialyte, veröffentlicht über GitHub Pages unter **https://rubin.
   unter `rubin-studio-cfg` und geht mit „Termin anfragen“ ins Kontaktformular.
 - Startseite: Abschnitt „Fünf Entscheidungen, ein Ring“ nutzt dieselbe Auswahl (Ring 1). Kein an das Scrollen
   gekoppelter Ablauf mehr.
+  Der Ring steht dort in Dreiviertelansicht von oben (Drehung 0,6 · Neigung 0,62 · Zoom 1,1), damit Band, Stein und
+  Innenseite zugleich zu sehen sind. Dieselbe Ansicht ist „Vorn“ im Ring-Studio und das Standbild `r-solo`.
+  Unter dem Ring steht eine Zeile mit den echten Werten der Auswahl (Legierung, Breite, Gewicht, Steine) aus
+  `ringSpecs`. Die Auswahlfelder sind ein Raster mit gleich breiten Feldern (vier je Zeile, schmal zwei).
+- Matte Oberflächen bekommen bei Gelb-, Rosé- und Rotgold etwas mehr Umgebungslicht (`metalMaterial` in
+  `src/ring/band.js`), sonst wirken sie stumpf. Weißgold und Platin bleiben unverändert.
 - Schrift: Überschriften und Text in Instrument Sans. Fraunces wird nur noch für die Gravur auf dem Ring geladen.
 - Die Standbilder `assets/img/r-*.avif/.webp` sind Aufnahmen aus demselben Modul. Wer am Modul etwas ändert,
   sollte sie neu aufnehmen. Zustand und Ansicht jedes Bildes stehen in `src/ring/standbilder.json`.

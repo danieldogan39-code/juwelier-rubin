@@ -1562,6 +1562,21 @@ function at() {
     cfg = studioLoad(),
     ring = cfg.rings[0],
     viewer = null,
+    mod = null,
+    out = c("[data-builder-spec]", e),
+    // Zeile unter dem Ring: was gewählt ist, dazu Breite, Gewicht und Steine aus dem Modell (sobald es geladen ist)
+    spec = () => {
+      if (!out) return;
+      let pick = (n) => {
+          let i = form.querySelector(`input[name="${n}"]:checked`);
+          return i ? i.nextElementSibling.textContent.trim() : "";
+        },
+        sp = mod ? mod.ringSpecs(ringState(ring)) : null,
+        parts = [`${pick("metal")} ${ring.metal === "platin" ? 950 : ring.grade}`, `${de1(ring.width)} mm breit`];
+      (sp && parts.push(`ca. ${de1(sp.weight)} g`),
+        sp && sp.stones && parts.push(`${sp.stones} ${sp.stones === 1 ? "Brillant" : "Brillanten"}, ${de1(sp.carat, 2)} ct`),
+        (out.innerHTML = parts.map((t) => `<span>${t}</span>`).join("")));
+    },
     VIEWS = { metal: "front", profile: "side", finish: "front", stones: "top", engraving: "inside" },
     fill = () => {
       (["metal", "profile", "finish", "stones"].forEach((k) => setRadio(form, k, ring[k])), (form.elements.engraving.value = ring.engraving));
@@ -1588,8 +1603,9 @@ function at() {
     form.addEventListener("input", (ev) => {
       let n = ev.target.name;
       if (!(n in ring)) return;
-      ((ring[n] = n === "engraving" ? ev.target.value.trim().slice(0, 30) : ev.target.value), R.set(CFG_KEY, cfg), viewer && viewer.set(state()), look(n));
-    }));
+      ((ring[n] = n === "engraving" ? ev.target.value.trim().slice(0, 30) : ev.target.value), R.set(CFG_KEY, cfg), viewer && viewer.set(state()), look(n), spec());
+    }),
+    spec());
   if (!stage || !ce()) {
     e.classList.add("no-3d");
     return;
@@ -1601,7 +1617,9 @@ function at() {
       if (started) return;
       started = !0;
       try {
-        let [{ createRingViewer: make }] = await Promise.all([de(), be()]);
+        let [m3] = await Promise.all([de(), be()]),
+          make = m3.createRingViewer;
+        mod = m3;
         ((viewer = make(c("canvas", stage), {
           mode: "single",
           autoRotate: !1,
@@ -1609,13 +1627,13 @@ function at() {
           preserve: !0,
           reflect: !0,
           fontFamily: '"Fraunces"',
-          restPitch: 0.2,
+          restPitch: 0.62,
           state: state(),
           onReady: () => {
-            ($ || (viewer.setView(-0.3, 0.42, 0.9), viewer.frame({ yaw: 0.35, pitch: 0.2, zoom: 1 })), fe(stage));
+            ($ || (viewer.setView(-0.2, 0.9, 0.9), viewer.frame({ yaw: 0.6, pitch: 0.62, zoom: 1.1 })), fe(stage), spec());
           },
         })),
-          viewer.setView(0.35, 0.2),
+          viewer.setView(0.6, 0.62, 1.1),
           window.addEventListener("pageswap", () => viewer.renderNow()));
       } catch (x) {
         (console.warn("3D ring unavailable", x), e.classList.add("no-3d"));
@@ -1808,14 +1826,14 @@ function lt() {
         preserve: !0,
         reflect: !0,
         fontFamily: '"Fraunces"',
-        restPitch: 0.2,
+        restPitch: 0.62,
         envSize: !oe("(pointer: coarse)") && (navigator.deviceMemory || 4) >= 8 ? 1024 : void 0,
         state: Object.assign({ mode: "single", stand: !0, fit: FIT }, ringState(ring())),
         onReady: () => {
-          ($ || (viewer.setView(-0.4, 0.5, 0.88), viewer.frame({ yaw: 0.35, pitch: 0.2, zoom: 1 })), fe(stage));
+          ($ || (viewer.setView(-0.2, 0.9, 0.88), viewer.frame({ yaw: 0.6, pitch: 0.62, zoom: 1.1 })), fe(stage));
         },
       })),
-        viewer.setView(0.35, 0.2),
+        viewer.setView(0.6, 0.62, 1.1),
         window.addEventListener("pageswap", () => viewer.renderNow()));
     } catch (x) {
       console.warn("3D ring unavailable", x);
