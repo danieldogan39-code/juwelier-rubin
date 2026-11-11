@@ -8126,26 +8126,24 @@ a.gbadge {
   min-width: 0;
 }
 .builder-tabs {
+  /* fünf Reiter, die immer in die Breite passen: nichts läuft zur Seite, nichts lässt sich schieben */
   display: flex;
-  margin-inline: calc(-1 * var(--gutter));
-  padding-inline: var(--gutter);
   border-bottom: 1px solid var(--line-dark);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.builder-tabs::-webkit-scrollbar {
-  display: none;
+  overflow: hidden;
+  touch-action: pan-y;
 }
 .builder-tabs button {
-  flex: 1 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 48px;
-  padding: 0 0.85rem;
+  padding: 0 0.1rem;
   margin-bottom: -1px;
   border-bottom: 2px solid transparent;
-  font: 600 0.8rem/1 var(--sans);
-  letter-spacing: 0.04em;
+  font: 600 clamp(0.69rem, 3.45vw, 0.84rem) / 1 var(--sans);
+  letter-spacing: 0.02em;
   color: var(--mist);
   white-space: nowrap;
+  touch-action: manipulation;
   transition:
     color 0.2s,
     border-color 0.2s;
@@ -8655,10 +8653,6 @@ html:not(.js) .builder-fallback {
   }
   .h2 {
     font-size: 1.55rem;
-  }
-  .builder-tabs button {
-    padding-inline: 0.42rem;
-    font-size: 0.76rem;
   }
 }
 @media (max-width: 699px) {

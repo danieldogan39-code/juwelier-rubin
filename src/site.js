@@ -1572,7 +1572,7 @@ function at() {
           return i ? i.nextElementSibling.textContent.trim() : "";
         },
         sp = mod ? mod.ringSpecs(ringState(ring)) : null,
-        parts = [`${pick("metal")} ${ring.metal === "platin" ? 950 : ring.grade}`, `${de1(ring.width)} mm breit`];
+        parts = [`${ring.metal === "bicolor" ? "Bicolor" : ALLOY[ring.metal] || pick("metal")} ${ring.metal === "platin" ? 950 : ring.grade}`, `${de1(ring.width)} mm breit`];
       (sp && parts.push(`ca. ${de1(sp.weight)} g`),
         sp && sp.stones && parts.push(`${sp.stones} ${sp.stones === 1 ? "Brillant" : "Brillanten"}, ${de1(sp.carat, 2)} ct`),
         (out.innerHTML = parts.map((t) => `<span>${t}</span>`).join("")));
